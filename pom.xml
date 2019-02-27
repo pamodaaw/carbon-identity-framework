@@ -1631,7 +1631,7 @@
 
     <properties>
         <apache.tomcat-catalina.version>9.0.11</apache.tomcat-catalina.version>
-        <apache.cxf-rt-frontend-jaxrs.version>2.7.16</apache.cxf-rt-frontend-jaxrs.version>
+        <apache.cxf-rt-frontend-jaxrs.version>3.3.0</apache.cxf-rt-frontend-jaxrs.version>
         <apache.cxf-rt-rs-service-description.version>3.1.4</apache.cxf-rt-rs-service-description.version>
         <codehaus.jackson-core-asl.version>1.8.6</codehaus.jackson-core-asl.version>
         <codehaus.jackson-mapper-asl.version>1.8.6</codehaus.jackson-mapper-asl.version>
