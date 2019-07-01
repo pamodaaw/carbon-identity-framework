@@ -25,30 +25,30 @@ import org.wso2.carbon.identity.application.authentication.framework.util.Sessio
  */
 public class SessionManagementServerException extends SessionManagementException {
 
+    public SessionManagementServerException(SessionMgtConstants.ErrorMessages error, Throwable cause) {
+
+        super(error, cause);
+    }
+
+    public SessionManagementServerException(SessionMgtConstants.ErrorMessages error, String
+            description, Throwable cause) {
+
+        super(error, description, cause);
+
+    }
+
     public SessionManagementServerException(String message, Throwable cause) {
+
         super(message, cause);
     }
 
-    public SessionManagementServerException(SessionMgtConstants.ErrorMessages error, int httpStatusCode, Throwable
-            cause) {
+    public SessionManagementServerException(String message, String errorCode) {
 
-        super(error, httpStatusCode, cause);
-
+        super(message, errorCode);
     }
 
-    public SessionManagementServerException(SessionMgtConstants.ErrorMessages error, int httpStatusCode, String
-            description, Throwable cause) {
+    public SessionManagementServerException(String message, String errorCode, String description, Throwable cause) {
 
-        super(error, httpStatusCode, cause);
-
-    }
-
-    public SessionManagementServerException(String message, String errorCode, int httpStatusCode, String
-            description, Throwable cause) {
-        super(message, errorCode, httpStatusCode, description, cause);
-    }
-
-    public SessionManagementServerException(String message, String errorCode, int httpStatusCode) {
-        super(message, errorCode, httpStatusCode);
+        super(message, errorCode, description, cause);
     }
 }

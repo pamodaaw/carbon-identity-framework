@@ -19,35 +19,27 @@
 package org.wso2.carbon.identity.application.authentication.framework.exception.session.mgt;
 
 import org.wso2.carbon.identity.application.authentication.framework.util.SessionMgtConstants;
+import org.wso2.carbon.identity.base.IdentityException;
 
 /**
  * Base exception for consent management feature.
  */
-public class SessionManagementException extends Exception {
+public class SessionManagementException extends IdentityException {
 
     private String errorCode;
-    private int httpStatusCode;
     private String description;
 
-    public SessionManagementException() {
-
-        super();
-    }
-
-    public SessionManagementException(SessionMgtConstants.ErrorMessages error, int httpStatusCode, Throwable cause) {
+    public SessionManagementException(SessionMgtConstants.ErrorMessages error, Throwable cause) {
 
         super(error.getMessage(), cause);
         this.errorCode = error.getCode();
-        this.httpStatusCode = httpStatusCode;
-
     }
 
-    public SessionManagementException(SessionMgtConstants.ErrorMessages error, int httpStatusCode, String
+    public SessionManagementException(SessionMgtConstants.ErrorMessages error, String
             description, Throwable cause) {
 
         super(error.getMessage(), cause);
         this.errorCode = error.getCode();
-        this.httpStatusCode = httpStatusCode;
         this.description = description;
 
     }
@@ -57,26 +49,19 @@ public class SessionManagementException extends Exception {
         super(message, cause);
     }
 
-    public SessionManagementException(String message, String errorCode, int httpStatusCode) {
+    public SessionManagementException(String message, String errorCode) {
 
         super(message);
         this.errorCode = errorCode;
-        this.httpStatusCode = httpStatusCode;
     }
 
-    public SessionManagementException(String message, String errorCode, int httpStatusCode, String description,
-                                      Throwable cause) {
+    public SessionManagementException(String message, String errorCode, String description, Throwable cause) {
 
         super(message, cause);
         this.errorCode = errorCode;
-        this.httpStatusCode = httpStatusCode;
         this.description = description;
     }
 
-    public SessionManagementException(Throwable cause) {
-
-        super(cause);
-    }
 
     public String getErrorCode() {
 
@@ -88,12 +73,11 @@ public class SessionManagementException extends Exception {
         this.errorCode = errorCode;
     }
 
-    public int getHttpStatusCode() {
-        return httpStatusCode;
+    public String getDescription() {
+        return description;
     }
 
-    public void setHttpStatusCode(int httpStatusCode) {
-        this.httpStatusCode = httpStatusCode;
+    public void setDescription(String description) {
+        this.description = description;
     }
-
 }
