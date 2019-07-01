@@ -23,6 +23,7 @@ package org.wso2.carbon.identity.application.authentication.framework.util;
  */
 public class SessionMgtConstants {
 
+
     public enum ErrorMessages {
 
         ERROR_CODE_TERMINATE_SESSION("SM_00001", "Error occurred while terminating session."),

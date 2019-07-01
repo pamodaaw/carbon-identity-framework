@@ -103,10 +103,8 @@ public class UserSessionManagementServiceImpl implements UserSessionManagementSe
     }
 
     @Override
-    public UserSession[] getSessionsByUserId(String userId) throws SessionManagementServerException {
-        UserSession[] sessionList;
-        sessionList = getActiveSessionList(getSessionIdListByUserId(userId));
-        return sessionList;
+    public List<UserSession> getSessionsByUserId(String userId) throws SessionManagementServerException {
+        return getActiveSessionList(getSessionIdListByUserId(userId));
     }
 
     @Override
@@ -138,8 +136,8 @@ public class UserSessionManagementServiceImpl implements UserSessionManagementSe
         } catch (UserSessionException e) {
             log.error("Error while ");
             throw new SessionManagementServerException(SessionMgtConstants.ErrorMessages
-                    .ERROR_CODE_UNABLE_TO_GET_SESSIONS, SessionMgtConstants.HttpStatusCode.ERROR_CODE_500, "Server " +
-                    "encountered an error while retrieving session list of user ID " + userId, e);
+                    .ERROR_CODE_UNABLE_TO_GET_SESSIONS, "Server encountered an error while retrieving session list of" +
+                    " user ID " + userId, e);
         }
     }
 
@@ -150,7 +148,7 @@ public class UserSessionManagementServiceImpl implements UserSessionManagementSe
      * @return UserSession[] Usersessions
      * @throws SessionManagementException if an error occurs when retrieving the UserSessions.
      */
-    private UserSession[] getActiveSessionList(List<String> sessionIdList) throws SessionManagementServerException {
+    private List<UserSession> getActiveSessionList(List<String> sessionIdList) throws SessionManagementServerException {
 
         List<UserSession> sessionsList = new ArrayList<>();
         for (String sessionId : sessionIdList) {
@@ -166,10 +164,6 @@ public class UserSessionManagementServiceImpl implements UserSessionManagementSe
             }
         }
 
-        if (!sessionsList.isEmpty()) {
-            return sessionsList.toArray(new UserSession[sessionsList.size()]);
-        }
-
-        return null;
+        return sessionsList;
     }
 }

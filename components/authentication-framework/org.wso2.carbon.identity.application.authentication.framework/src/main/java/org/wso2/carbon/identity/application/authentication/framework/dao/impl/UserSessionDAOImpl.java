@@ -70,7 +70,7 @@ public class UserSessionDAOImpl implements UserSessionDAO {
 
             if (!applicationList.isEmpty()) {
                 UserSession userSession = new UserSession();
-                userSession.setApplications(applicationList.toArray(new Application[applicationList.size()]));
+                userSession.setApplications(applicationList);
                 userSession.setUserAgent(userAgent);
                 userSession.setIp(ip);
                 userSession.setLoginTime(loginTime);
@@ -80,8 +80,8 @@ public class UserSessionDAOImpl implements UserSessionDAO {
             }
         } catch (DataAccessException e) {
             throw new SessionManagementServerException(SessionMgtConstants.ErrorMessages
-                    .ERROR_CODE_UNABLE_TO_GET_SESSION, SessionMgtConstants.HttpStatusCode.ERROR_CODE_500,
-                    "Server encountered an error while retrieving session information for " + sessionId, e);
+                    .ERROR_CODE_UNABLE_TO_GET_SESSION, "Server encountered an error while retrieving session " +
+                    "information for " + sessionId, e);
         }
         return null;
     }
