@@ -18,8 +18,6 @@
 
 package org.wso2.carbon.identity.application.authentication.framework.dao.impl;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.database.utils.jdbc.JdbcTemplate;
 import org.wso2.carbon.database.utils.jdbc.exceptions.DataAccessException;
 import org.wso2.carbon.identity.application.authentication.framework.dao.UserSessionDAO;
@@ -38,13 +36,11 @@ import java.util.List;
  */
 public class UserSessionDAOImpl implements UserSessionDAO {
 
-    private static final Log log = LogFactory.getLog(UserSessionDAOImpl.class);
-
     public UserSessionDAOImpl() {
     }
 
     public UserSession getSession(String sessionId) throws SessionManagementServerException {
-        List<Application> applicationList = null;
+        List<Application> applicationList;
         JdbcTemplate jdbcTemplate = JdbcUtils.getNewTemplate();
 
         try {
@@ -81,7 +77,7 @@ public class UserSessionDAOImpl implements UserSessionDAO {
         } catch (DataAccessException e) {
             throw new SessionManagementServerException(SessionMgtConstants.ErrorMessages
                     .ERROR_CODE_UNABLE_TO_GET_SESSION, "Server encountered an error while retrieving session " +
-                    "information for " + sessionId, e);
+                    "information for the session " + sessionId, e);
         }
         return null;
     }

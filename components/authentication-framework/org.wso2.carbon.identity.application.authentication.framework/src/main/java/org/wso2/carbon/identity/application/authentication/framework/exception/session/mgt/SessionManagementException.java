@@ -23,36 +23,19 @@ import org.wso2.carbon.identity.base.IdentityException;
 
 /**
  * Base exception for consent management feature.
+ * This exceptions must have the message, error code and description
  */
 public class SessionManagementException extends IdentityException {
 
     private String errorCode;
     private String description;
 
-    public SessionManagementException(SessionMgtConstants.ErrorMessages error, Throwable cause) {
-
-        super(error.getMessage(), cause);
-        this.errorCode = error.getCode();
-    }
-
-    public SessionManagementException(SessionMgtConstants.ErrorMessages error, String
-            description, Throwable cause) {
+    public SessionManagementException(SessionMgtConstants.ErrorMessages error, String description, Throwable cause) {
 
         super(error.getMessage(), cause);
         this.errorCode = error.getCode();
         this.description = description;
 
-    }
-
-    public SessionManagementException(String message, Throwable cause) {
-
-        super(message, cause);
-    }
-
-    public SessionManagementException(String message, String errorCode) {
-
-        super(message);
-        this.errorCode = errorCode;
     }
 
     public SessionManagementException(String message, String errorCode, String description, Throwable cause) {
@@ -62,6 +45,10 @@ public class SessionManagementException extends IdentityException {
         this.description = description;
     }
 
+    // The constructor is made private to avoid generating exceptions without error code and description.
+    public SessionManagementException(String message, Throwable cause){
+        super(message,cause);
+    }
 
     public String getErrorCode() {
 

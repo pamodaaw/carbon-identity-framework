@@ -25,11 +25,6 @@ import org.wso2.carbon.identity.application.authentication.framework.util.Sessio
  */
 public class SessionManagementClientException extends SessionManagementException {
 
-    public SessionManagementClientException(SessionMgtConstants.ErrorMessages error, Throwable cause) {
-
-        super(error, cause);
-    }
-
     public SessionManagementClientException(SessionMgtConstants.ErrorMessages error, String
             description, Throwable cause) {
 
@@ -37,18 +32,14 @@ public class SessionManagementClientException extends SessionManagementException
 
     }
 
-    public SessionManagementClientException(String message, Throwable cause) {
-
-        super(message, cause);
-    }
-
-    public SessionManagementClientException(String message, String errorCode) {
-
-        super(message, errorCode);
-    }
-
     public SessionManagementClientException(String message, String errorCode, String description, Throwable cause) {
 
         super(message, errorCode, description, cause);
+    }
+
+    // The constructor is made private to avoid generating exceptions without error code and description.
+    private SessionManagementClientException(String message, Throwable cause) {
+
+        super(message, cause);
     }
 }
