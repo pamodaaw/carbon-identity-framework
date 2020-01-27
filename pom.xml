@@ -1806,7 +1806,7 @@
         <carbon.identity.package.import.version.range>[5.14.0, 6.0.0)</carbon.identity.package.import.version.range>
 
         <!--Carbon registry version-->
-        <org.wso2.carbon.registry.version>4.7.20</org.wso2.carbon.registry.version>
+        <org.wso2.carbon.registry.version>4.7.28</org.wso2.carbon.registry.version>
         <carbon.registry.common.imp.pkg.version.range>[0.0.0,1.0.0)</carbon.registry.common.imp.pkg.version.range>
         <carbon.registry.indexing.imp.pkg.version.range>[4.7.3,5.0.0)</carbon.registry.indexing.imp.pkg.version.range>
 
