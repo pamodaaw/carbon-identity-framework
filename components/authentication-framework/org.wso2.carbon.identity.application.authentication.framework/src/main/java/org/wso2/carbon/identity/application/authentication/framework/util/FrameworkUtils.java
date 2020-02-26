@@ -2441,8 +2441,8 @@ public class FrameworkUtils {
                 if (userStoreManager instanceof AbstractUserStoreManager) {
                     String userId = ((AbstractUserStoreManager) userStoreManager).getUserIDFromUserName(username);
 
-                    // If the user id is not present in the userstore, we need to add it to the userstore. But if the
-                    // userstore is read-only, we cannot add the id and empty user id will returned.
+                    // If only the user store is not read-only, update the user-id claim with the unique id.
+                    // Otherwise there will be no permission to update the userstore.
                     if (StringUtils.isBlank(userId) && !userStoreManager.isReadOnly()) {
                         userId = addUserId(username, userStoreManager);
                     }
@@ -2455,12 +2455,12 @@ public class FrameworkUtils {
                 throw new UserSessionException("Unable to get the unique id of the user: " + username + ".");
             } catch (org.wso2.carbon.user.core.UserStoreException e) {
                 if (log.isDebugEnabled()) {
-                    log.debug("Error occurred while retrieving Id for the user: " + username, e);
+                    log.debug("Error occurred while resolving Id for the user: " + username, e);
                 }
-                throw new UserSessionException("Unable to retrieve Id for the user: " + username);
+                throw new UserSessionException("Error occurred while resolving Id for the user: " + username);
             }
         } catch (UserStoreException e) {
-            throw new UserSessionException("Unable to retrieve Id for the user: " + username);
+            throw new UserSessionException("Error occurred while retrieving the userstore manager to resolve Id for the user: " + username);
         }
     }
 

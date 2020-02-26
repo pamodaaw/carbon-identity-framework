@@ -741,16 +741,16 @@ public class UserSessionStore {
 
         Boolean isExisting = false;
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
-            try (PreparedStatement preparedStatement = connection.prepareStatement(SQLQueries
-                    .SQL_SELECT_INFO_OF_USER_ID)) {
+            try (PreparedStatement preparedStatement = connection
+                    .prepareStatement(SQLQueries.SQL_SELECT_INFO_OF_USER_ID)) {
                 preparedStatement.setString(1, userId);
                 try (ResultSet resultSet = preparedStatement.executeQuery()) {
                     if (resultSet.next()) {
                         isExisting = true;
                     }
                 }
-            } catch (SQLException e) {
-                throw new UserSessionException("Error while retrieving information of user id: " + userId, e);
+            } catch (SQLException e1) {
+                throw new UserSessionException("Error while retrieving information of user id: " + userId, e1);
             }
         } catch (SQLException e) {
             throw new UserSessionException("Error while retrieving information of user id: " + userId, e);
