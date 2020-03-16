@@ -42,6 +42,11 @@ public class TemplateMgtConstants {
 
     public static final String TEMPLATE_RESOURCE_PATH = "/";
 
+    public enum TemplateType {
+
+        APPLICATION, IDP
+    }
+
     public enum ErrorMessages {
         ERROR_CODE_INSERT_TEMPLATE("TM_00001", "Error occurred while adding the template: %s."),
         ERROR_CODE_SELECT_TEMPLATE_BY_NAME("TM_00002", "Error occurred while retrieving template" +

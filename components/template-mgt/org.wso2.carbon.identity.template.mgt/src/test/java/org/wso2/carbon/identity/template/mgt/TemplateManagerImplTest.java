@@ -192,8 +192,8 @@ public class TemplateManagerImplTest extends PowerMockTestCase {
     public Object[][] provideInputData() throws Exception {
 
         Template testTemplate1 = new Template(SUPER_TENANT_ID, null, "sample description", sampleScript);
-        Template testTemplate2 = new Template(null, "sample Template", "sample description", null);
-        Template testTemplate3 = new Template(null, null, "sample description", null);
+        Template testTemplate2 = new Template(SUPER_TENANT_ID, "sample Template", "sample description", null);
+        Template testTemplate3 = new Template(SUPER_TENANT_ID, null, "sample description", null);
 
         return new Object[][]{
                 {
@@ -337,24 +337,6 @@ public class TemplateManagerImplTest extends PowerMockTestCase {
             templateManager.addTemplate(((Template) template));
             Assert.fail("Expected: " + TemplateManagementClientException.class.getName());
         }
-    }
-
-    @Test
-    public void testSetTenantIdIfNull() throws Exception {
-
-        DataSource dataSource = mock(DataSource.class);
-        mockDataSource(dataSource);
-        Template template = new Template(null, "T1", "Description 1", sampleScript);
-
-        try (Connection connection = getConnection()) {
-
-            Connection spyConnection = spyConnection(connection);
-            when(dataSource.getConnection()).thenReturn(spyConnection);
-            TemplateManager templateManager = new TemplateManagerImpl();
-            Template templateInfo = templateManager.addTemplate(template);
-            Assert.assertEquals(templateInfo.getTenantId(), new Integer(SUPER_TENANT_ID));
-        }
-
     }
 
     @Test()

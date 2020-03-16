@@ -218,10 +218,6 @@ public class TemplateManagerImpl implements TemplateManager {
             }
             throw handleClientException(ERROR_CODE_TEMPLATE_SCRIPT_REQUIRED, null);
         }
-
-        if (template.getTenantId() == null) {
-            template.setTenantId(getTenantIdFromCarbonContext());
-        }
     }
 
     /**
