@@ -27,7 +27,7 @@ public class TemplateTest {
     private static final String description = "sample Description";
     private static final String script = "sample Script";
     private static Integer templateId = 1;
-    private static Integer tenantId = -1234;
+    private static int tenantId = -1234;
     Template testTemplate1 = new Template(templateId, tenantId, templateName, description, script);
     Template testTemplate2 = new Template(templateName, description, script);
 
@@ -54,7 +54,7 @@ public class TemplateTest {
     @Test
     public void testSetTenantId() {
 
-        Integer tenantId = 101;
+        int tenantId = 101;
         testTemplate2.setTenantId(tenantId);
         Assert.assertEquals(testTemplate2.getTenantId(), tenantId);
     }
