@@ -27,8 +27,7 @@ import java.util.Map;
  */
 public class Template {
 
-    private Integer templateId;
-    private String templateResourceId;
+    private String templateId;
     private int tenantId;
     private String templateName;
     private String description;
@@ -37,11 +36,11 @@ public class Template {
     private String templateScript;
     private Map<String, String> propertiesMap = new HashMap<>();
 
-    public Template(String templateResourceId, int tenantId, String templateName, String description, String
+    public Template(String templateId, int tenantId, String templateName, String description, String
             imageUrl, TemplateMgtConstants.TemplateType templateType, String templateScript, Map<String, String>
                             propertiesMap) {
 
-        this.templateResourceId = templateResourceId;
+        this.templateId = templateId;
         this.tenantId = tenantId;
         this.templateName = templateName;
         this.description = description;
@@ -49,16 +48,6 @@ public class Template {
         this.templateType = templateType;
         this.templateScript = templateScript;
         this.propertiesMap = propertiesMap;
-    }
-
-    public Template(Integer templateId, int tenantId, String templateName,
-                    String description, String templateScript) {
-
-        this.templateId = templateId;
-        this.tenantId = tenantId;
-        this.templateName = templateName;
-        this.description = description;
-        this.templateScript = templateScript;
     }
 
     public Template(int tenantId, String templateName, String description, String templateScript) {
@@ -76,24 +65,8 @@ public class Template {
         this.templateScript = templateScript;
     }
 
-    /**
-     * Get template ID.
-     *
-     * @return template ID.
-     */
-    public Integer getTemplateId() {
+    public Template() {
 
-        return templateId;
-    }
-
-    /**
-     * Set template ID.
-     *
-     * @param templateId template ID.
-     */
-    public void setTemplateId(Integer templateId) {
-
-        this.templateId = templateId;
     }
 
     /**
@@ -181,17 +154,17 @@ public class Template {
      *
      * @return template resource id.
      */
-    public String getTemplateResourceId() {
-        return templateResourceId;
+    public String getTemplateId() {
+        return templateId;
     }
 
     /**
      * Set the unique identifier of the template.
      *
-     * @param templateResourceId unique id for the template.
+     * @param templateId unique id for the template.
      */
-    public void setTemplateResourceId(String templateResourceId) {
-        this.templateResourceId = templateResourceId;
+    public void setTemplateId(String templateId) {
+        this.templateId = templateId;
     }
 
     /**
