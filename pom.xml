@@ -1977,7 +1977,7 @@
         <maven.buildnumber.plugin.version>1.4</maven.buildnumber.plugin.version>
         <maven.compiler.plugin.version>3.8.0</maven.compiler.plugin.version>
         <maven.war.plugin.version>3.2.2</maven.war.plugin.version>
-        <maven.build.helper.plugin.version>3.0.0</maven.build.helper.plugin.version>
+        <maven.build.helper.plugin.version>3.2.0</maven.build.helper.plugin.version>
         <swagger2cxf-maven-plugin.version>1.0-SNAPSHOT</swagger2cxf-maven-plugin.version>
 
         <project.scm.id>my-scm-server</project.scm.id>
