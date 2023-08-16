@@ -154,6 +154,25 @@ public class DefaultRequestCoordinator extends AbstractRequestCoordinator implem
             IdentityUtil.threadLocalProperties.get().put(FrameworkConstants.AUTHENTICATION_FRAMEWORK_FLOW, true);
             AuthenticationRequestCacheEntry authRequest = null;
             boolean returning = false;
+
+            // Check whether this is a registration request.
+            if (request.getParameter("prompt2") != null && "create".equals(request.getParameter("prompt2"))) {
+                // This is a registration request.
+                if (log.isDebugEnabled()) {
+                    log.debug("Registration request received.");
+                }
+                if (sessionDataKey != null) {
+                    authRequest = getAuthenticationRequest(request, sessionDataKey);
+                    if (authRequest != null) {
+                        request = FrameworkUtils.getCommonAuthReqWithParams(request, authRequest);
+                    }
+                }
+                context = initializeFlow(request, responseWrapper);
+                context.setRegistrationRequest(true);
+                FrameworkUtils.getRegistrationRequestHandler().handle(request, response, context);
+                return;
+            }
+
             // Check whether this is the start of the authentication flow.
             // 'type' parameter should be present if so. This parameter contains
             // the request type (e.g. samlsso) set by the calling servlet.
@@ -307,7 +326,8 @@ public class DefaultRequestCoordinator extends AbstractRequestCoordinator implem
                 */
                 if (isBackToFirstStepRequest(request) || (isIdentifierFirstRequest(request)
                         && (!isFlowHandlerInCurrentStepCanHandleRequest(context, request)
-                        && !isIdfInitiatedFromAuthenticator(context)))) {
+                        && !isIdfInitiatedFromAuthenticator(context))
+                        && !context.isRegistrationRequest())) {
                     if (isCompletedStepsAreFlowHandlersOnly(context)) {
                         // If the incoming request is restart and all the completed steps have only flow handlers as the
                         // authenticated authenticator, then we reset the current step to 1.
@@ -342,7 +362,9 @@ public class DefaultRequestCoordinator extends AbstractRequestCoordinator implem
                 setSPAttributeToRequest(request, context);
                 context.setReturning(returning);
 
-                if (!context.isLogoutRequest()) {
+                if (context.isRegistrationRequest()) {
+                    FrameworkUtils.getRegistrationRequestHandler().handle(request, responseWrapper, context);
+                } else if (!context.isLogoutRequest()) {
                     FrameworkUtils.getAuthenticationRequestHandler().handle(request, responseWrapper, context);
                 } else {
                     FrameworkUtils.getLogoutRequestHandler().handle(request, responseWrapper, context);

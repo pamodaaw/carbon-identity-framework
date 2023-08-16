@@ -124,6 +124,17 @@ public class AuthenticationContext extends MessageContext implements Serializabl
      */
     private long expiryTimeNano = 0L;
 
+    private boolean isRegistrationRequest = false;
+
+    // Write getters and setters for attribute isRegistrationRequest.
+    public boolean isRegistrationRequest() {
+        return isRegistrationRequest;
+    }
+
+    public void setRegistrationRequest(boolean isRegistrationRequest) {
+        this.isRegistrationRequest = isRegistrationRequest;
+    }
+
     public String getCallerPath() {
         return callerPath;
     }

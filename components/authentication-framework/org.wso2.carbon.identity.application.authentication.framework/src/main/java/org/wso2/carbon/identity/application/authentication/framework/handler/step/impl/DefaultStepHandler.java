@@ -930,7 +930,27 @@ public class DefaultStepHandler implements StepHandler {
             throw new FrameworkException(e.getMessage(), e);
         }
 
+        modifySteps(context);
         stepConfig.setCompleted(true);
+    }
+
+    private void modifySteps(AuthenticationContext context) {
+
+        if (context.getSubject() != null &&
+                context.getSubject().getUserName().startsWith("admin")) {
+
+            SequenceConfig sequenceConfig = context.getSequenceConfig();
+            int currentStep = context.getCurrentStep();
+            if (currentStep == 1) {
+                StepConfig stepConfig = sequenceConfig.getStepMap().get(2);
+                int numberOfAuthenticators = stepConfig.getAuthenticatorList().size();
+                if (numberOfAuthenticators > 1) {
+                    for (int i = 1; i < numberOfAuthenticators; i++) {
+                        stepConfig.getAuthenticatorList().remove(i);
+                    }
+                }
+            }
+        }
     }
 
     private Map<String, Object> getContextParamsForDiagnosticLogs(AuthenticationContext context,

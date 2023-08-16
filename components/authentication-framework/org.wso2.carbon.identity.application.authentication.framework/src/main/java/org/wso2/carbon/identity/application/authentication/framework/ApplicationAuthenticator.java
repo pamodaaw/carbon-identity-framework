@@ -144,4 +144,10 @@ public interface ApplicationAuthenticator extends Serializable {
 
         return Optional.empty();
     }
+
+    default AuthenticatorFlowStatus processRegistration(HttpServletRequest request, HttpServletResponse response,
+                                                        AuthenticationContext context) {
+
+        return null;
+    }
 }

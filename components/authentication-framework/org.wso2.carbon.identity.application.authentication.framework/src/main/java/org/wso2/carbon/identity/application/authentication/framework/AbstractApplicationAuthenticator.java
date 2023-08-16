@@ -472,4 +472,12 @@ public abstract class AbstractApplicationAuthenticator implements ApplicationAut
         }
         return tagsArray;
     }
+
+    @Override
+    public AuthenticatorFlowStatus processRegistration(HttpServletRequest request, HttpServletResponse response,
+                                                          AuthenticationContext context) {
+
+        log.info("Executing default processRegistration method since the child class has not implemented it.");
+        return AuthenticatorFlowStatus.INCOMPLETE;
+    }
 }
