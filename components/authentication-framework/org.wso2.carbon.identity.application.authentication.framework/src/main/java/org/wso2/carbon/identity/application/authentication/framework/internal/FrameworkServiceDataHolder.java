@@ -55,6 +55,7 @@ import org.wso2.carbon.identity.organization.management.service.OrganizationMana
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.identity.organization.management.service.OrganizationUserResidentResolverService;
 import org.wso2.carbon.identity.user.profile.mgt.association.federation.FederatedAssociationManager;
+import org.wso2.carbon.identity.user.registration.RegistrationRequestManager;
 import org.wso2.carbon.idp.mgt.IdpManager;
 import org.wso2.carbon.user.core.service.RealmService;
 
@@ -114,6 +115,7 @@ public class FrameworkServiceDataHolder {
     private boolean isOrganizationManagementEnable = false;
     private OrganizationManager organizationManager;
     private OrganizationUserResidentResolverService organizationUserResidentResolverService;
+    private RegistrationRequestManager registrationRequestManager;
 
     private FrameworkServiceDataHolder() {
 
@@ -743,5 +745,15 @@ public class FrameworkServiceDataHolder {
     public ConfigurationManager getConfigurationManager() {
 
         return configurationManager;
+    }
+
+    public RegistrationRequestManager getRegistrationRequestManager() {
+
+        return registrationRequestManager;
+    }
+
+    public void setRegistrationRequestManager(RegistrationRequestManager registrationRequestManager) {
+
+        this.registrationRequestManager = registrationRequestManager;
     }
 }

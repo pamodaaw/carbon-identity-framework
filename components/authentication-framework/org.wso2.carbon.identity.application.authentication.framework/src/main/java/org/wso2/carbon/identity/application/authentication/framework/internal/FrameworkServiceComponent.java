@@ -111,6 +111,7 @@ import org.wso2.carbon.identity.organization.management.service.OrganizationMana
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.identity.organization.management.service.OrganizationUserResidentResolverService;
 import org.wso2.carbon.identity.user.profile.mgt.association.federation.FederatedAssociationManager;
+import org.wso2.carbon.identity.user.registration.RegistrationRequestManager;
 import org.wso2.carbon.idp.mgt.IdpManager;
 import org.wso2.carbon.idp.mgt.listener.IdentityProviderMgtListener;
 import org.wso2.carbon.stratos.common.listeners.TenantMgtListener;
@@ -1068,5 +1069,20 @@ public class FrameworkServiceComponent {
 
         log.debug("Unset organization user resident resolver service.");
         FrameworkServiceDataHolder.getInstance().setOrganizationUserResidentResolverService(null);
+    }
+
+    @Reference(name = "usermgt.registration.component",
+            service = RegistrationRequestManager.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetUserRegistrationService")
+    protected void setUserRegistrationService(RegistrationRequestManager registrationRequestManager) {
+
+        FrameworkServiceDataHolder.getInstance().setRegistrationRequestManager(registrationRequestManager);
+    }
+
+    protected void unsetUserRegistrationService(RegistrationRequestManager registrationRequestManager) {
+
+        FrameworkServiceDataHolder.getInstance().setRegistrationRequestManager(null);
     }
 }

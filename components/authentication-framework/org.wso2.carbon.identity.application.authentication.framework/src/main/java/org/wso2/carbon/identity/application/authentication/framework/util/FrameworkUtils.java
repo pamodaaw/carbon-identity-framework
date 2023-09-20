@@ -122,6 +122,7 @@ import org.wso2.carbon.identity.event.event.Event;
 import org.wso2.carbon.identity.event.services.IdentityEventService;
 import org.wso2.carbon.identity.multi.attribute.login.mgt.ResolvedUserResult;
 import org.wso2.carbon.identity.user.profile.mgt.association.federation.FederatedAssociationManager;
+import org.wso2.carbon.identity.user.registration.RegistrationRequestManager;
 import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
 import org.wso2.carbon.idp.mgt.IdentityProviderManager;
 import org.wso2.carbon.idp.mgt.IdpManager;
@@ -3488,5 +3489,10 @@ public class FrameworkUtils {
     public static boolean isIdfInitiatedFromAuthenticator(AuthenticationContext context) {
 
         return Boolean.TRUE.equals(context.getProperty(IS_IDF_INITIATED_FROM_AUTHENTICATOR));
+    }
+
+    public static RegistrationRequestManager getRegistrationRequestManager() {
+
+        return FrameworkServiceDataHolder.getInstance().getRegistrationRequestManager();
     }
 }

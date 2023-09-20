@@ -153,6 +153,17 @@ public class DefaultRequestCoordinator extends AbstractRequestCoordinator implem
             IdentityUtil.threadLocalProperties.get().put(FrameworkConstants.AUTHENTICATION_FRAMEWORK_FLOW, true);
             AuthenticationRequestCacheEntry authRequest = null;
             boolean returning = false;
+
+//            if (request.getAttribute(FrameworkConstants.RegistrationRequest.REGISTRATION_REQUEST) != null &&
+//                    request.getAttribute(FrameworkConstants.RegistrationRequest.REGISTRATION_REQUEST).equals(true)) {
+//                // This is a registration request.
+//                if (log.isDebugEnabled()) {
+//                    log.debug("Registration request received.");
+//                }
+//                FrameworkUtils.getRegistrationRequestManager().processRegistration(request, response);
+//                return;
+//            }
+
             // Check whether this is the start of the authentication flow.
             // 'type' parameter should be present if so. This parameter contains
             // the request type (e.g. samlsso) set by the calling servlet.

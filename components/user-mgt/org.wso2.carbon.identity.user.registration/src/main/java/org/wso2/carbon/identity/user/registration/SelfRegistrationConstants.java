@@ -35,6 +35,10 @@ public class SelfRegistrationConstants {
     public static final String SIGN_UP_ROLE_ELEMENT = "SignUpRole";
     public static final String SIGN_UP_ROLE_CLAIM_URI = "http://wso2.org/claims/signuprole";
 
+    public static final String REGISTRATION_REQUEST = "registrationRequest";
+
+    public static final String REGISTRATION_RESPONSE = "registrationResponse";
+
     private SelfRegistrationConstants(){
 
     }
