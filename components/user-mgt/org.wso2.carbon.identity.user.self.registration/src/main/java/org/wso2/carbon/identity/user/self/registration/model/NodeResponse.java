@@ -20,7 +20,6 @@ package org.wso2.carbon.identity.user.self.registration.model;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +33,7 @@ public class NodeResponse {
     private Map<String, String> additionalInfo = new HashMap<>();
     private String userAssertion;
     private Message message;
+    private String pageId;
 
     public NodeResponse(String status) {
 
@@ -96,5 +96,15 @@ public class NodeResponse {
     public void addAdditionalInfo(Map<String, String> additionalInfo) {
 
         this.additionalInfo = additionalInfo;
+    }
+
+    public String getPageId() {
+
+        return pageId;
+    }
+
+    public void setPageId(String pageId) {
+
+        this.pageId = pageId;
     }
 }

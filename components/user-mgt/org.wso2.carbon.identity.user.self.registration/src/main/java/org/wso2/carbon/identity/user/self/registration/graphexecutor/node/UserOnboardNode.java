@@ -50,6 +50,11 @@ public class UserOnboardNode extends AbstractNode {
         super();
     }
 
+    public UserOnboardNode(String id) {
+
+        super(id);
+    }
+
     @Override
     public NodeResponse execute(RegistrationContext context) throws RegistrationFrameworkException {
 
@@ -72,7 +77,7 @@ public class UserOnboardNode extends AbstractNode {
             userClaims.put(entry.getKey(), entry.getValue().toString());
         }
 
-        // todo Identify the userdomain properly.
+        // TODO:  Identify the userdomain properly.
         try {
             userStoreManager
                     .addUser(IdentityUtil.addDomainToName(user.getUsername(), "PRIMARY"), password, null, userClaims,

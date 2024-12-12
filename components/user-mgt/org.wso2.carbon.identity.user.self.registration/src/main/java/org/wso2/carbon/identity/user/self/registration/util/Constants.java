@@ -36,6 +36,7 @@ public class Constants {
     public static final String STATUS_VERIFICATION_REQUIRED = "VERIFICATION_REQUIRED";
     public static final String STATUS_NEXT_ACTION_PENDING = "ACTION_PENDING";
     public static final String STATUS_EXTERNAL_REDIRECTION = "EXTERNAL_REDIRECTION";
+    public static final String STATUS_PROMPT_ONLY = "PROMPT_ONLY";
     public static final String STATUS_USER_CREATED = "USER_CREATED";
 
     public static final String PASSWORD = "PASSWORD";

@@ -19,7 +19,6 @@
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
-import org.wso2.carbon.identity.user.self.registration.model.InputData;
 import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
@@ -40,28 +39,28 @@ public interface Node {
      *
      * @return The next node in the sequence.
      */
-    Node getNextNode();
+    String getNextNodeId();
 
     /**
      * Set the next node in the sequence.
      *
      * @param nextNode The next node in the sequence.
      */
-    void setNextNode(Node nextNode);
+    void setNextNodeId(String nextNode);
 
     /**
      * Get the previous node in the sequence.
      *
      * @return The previous node in the sequence.
      */
-    Node getPreviousNode();
+    String getPreviousNodeID();
 
     /**
      * Set the previous node in the sequence.
      *
      * @param previousNode The previous node in the sequence.
      */
-    void setPreviousNode(Node previousNode);
+    void setPreviousNodeId(String previousNode);
 
     /**
      * Execute the node.

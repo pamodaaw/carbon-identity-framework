@@ -21,9 +21,7 @@ package org.wso2.carbon.identity.user.self.registration.model;
 import org.wso2.carbon.identity.user.self.registration.temp.RegistrationConstants;
 
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class RegistrationRequestedUser implements Serializable {

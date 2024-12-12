@@ -40,6 +40,8 @@ public class CombinedInputCollectionNode extends AbstractNode {
          super();
     }
 
+
+
     /**
      * Set the list of nodes referenced by this node when prompting user input.
      *
@@ -58,6 +60,17 @@ public class CombinedInputCollectionNode extends AbstractNode {
     public void addReferencedNode(InputCollectionNode referencedNode) {
 
         referencedNodes.add(referencedNode);
+    }
+
+    @Override
+    public void setNextNodeId(String nextNode) {
+
+    }
+
+    @Override
+    public String getPreviousNodeID() {
+
+        return "";
     }
 
     @Override

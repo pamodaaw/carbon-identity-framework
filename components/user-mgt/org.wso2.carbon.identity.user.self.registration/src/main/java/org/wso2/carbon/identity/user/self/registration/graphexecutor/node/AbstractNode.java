@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
@@ -29,12 +31,20 @@ import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext
 public abstract class AbstractNode implements Node {
 
     private final String id;
-    private Node nextNode;
-    private Node previousNode;
+    private String nextNodeId;
+    private String previousNodeId;
+    private Map<String, String> pageIds;
 
     public AbstractNode() {
 
         this.id = UUID.randomUUID().toString();
+        pageIds = new HashMap<>();
+    }
+
+    public AbstractNode(String id) {
+
+        this.id = id;
+        pageIds = new HashMap<>();
     }
 
     @Override
@@ -44,28 +54,26 @@ public abstract class AbstractNode implements Node {
     }
 
     @Override
-    public Node getNextNode() {
+    public String getNextNodeId() {
 
-        return this.nextNode;
+        return this.nextNodeId;
+    }
+
+    public void setNextNodeId(String nextNodeId) {
+
+        this.nextNodeId = nextNodeId;
+
+    }
+
+    public String getPreviousNodeID() {
+
+        return this.previousNodeId;
     }
 
     @Override
-    public void setNextNode(Node nextNode) {
+    public void setPreviousNodeId(String previousNodeId) {
 
-        this.nextNode = nextNode;
-
-    }
-
-    @Override
-    public Node getPreviousNode() {
-
-        return this.previousNode;
-    }
-
-    @Override
-    public void setPreviousNode(Node previousNode) {
-
-        this.previousNode = previousNode;
+        this.previousNodeId = previousNodeId;
 
     }
 

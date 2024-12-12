@@ -22,5 +22,5 @@ import java.util.List;
 
 public interface DecisionNode {
 
-    public List<Node> getNextNodes();
+    public List<String> getNextNodeIds();
 }

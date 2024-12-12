@@ -29,7 +29,6 @@ import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
 import org.wso2.carbon.identity.user.self.registration.model.InitData;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
-import org.wso2.carbon.identity.user.self.registration.util.Constants;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.PASSWORD;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ACTION_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
@@ -58,22 +57,22 @@ public class PasswordOnboarderTest implements Authentication, AttributeCollectio
         ExecutorResponse response = new ExecutorResponse();
 
         // Implement the actual task logic here
-        if (STATUS_ATTR_REQUIRED.equals(context.getExecutorStatus())) {
+//        if (STATUS_ATTR_REQUIRED.equals(context.getExecutorStatus())) {
             if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(USERNAME)) {
                 response.setResult(STATUS_ACTION_COMPLETE);
                 Map<String, Object> userClaims = new HashMap<>();
                 userClaims.put(USERNAME, userInputs.get(USERNAME));
                 response.setUpdatedUserClaims(userClaims);
                 return response;
-            }
-        }
-        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
+            } else {
+//        }
+//        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
             response.setResult(STATUS_ATTR_REQUIRED);
             response.setRequiredData(getUsernameData());
             return response;
         }
-        response.setResult("ERROR");
-        return response;
+//        response.setResult("ERROR");
+//        return response;
     }
 
     @Override
@@ -83,22 +82,22 @@ public class PasswordOnboarderTest implements Authentication, AttributeCollectio
         ExecutorResponse response = new ExecutorResponse();
 
         // Implement the actual task logic here
-        if (STATUS_CRED_REQUIRED.equals(context.getExecutorStatus())) {
+//        if (STATUS_CRED_REQUIRED.equals(context.getExecutorStatus())) {
             if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(PASSWORD)) {
                 response.setResult(STATUS_ACTION_COMPLETE);
                 Map<String, String> credentials = new HashMap<>();
                 credentials.put(PASSWORD, userInputs.get(PASSWORD));
                 response.setUserCredentials(credentials);
                 return response;
-            }
-        }
-        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
-            response.setResult(STATUS_ATTR_REQUIRED);
+            } else {
+//        }
+//        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
+            response.setResult(STATUS_CRED_REQUIRED);
             response.setRequiredData(getPasswordData());
             return response;
         }
-        response.setResult("ERROR");
-        return response;
+//        response.setResult("ERROR");
+//        return response;
     }
 
     @Override
@@ -137,7 +136,6 @@ public class PasswordOnboarderTest implements Authentication, AttributeCollectio
         List<InputMetaData> inputMetaData = new ArrayList<>();
         InputMetaData e1 = new InputMetaData(USERNAME, USERNAME, "attribute", 1);
         e1.setMandatory(true);
-        e1.setValidationRegex("*");
         inputMetaData.add(e1);
         return inputMetaData;
     }

@@ -65,22 +65,22 @@ public class EmailOTPExecutorTest implements Authentication, AttributeCollection
         ExecutorResponse response = new ExecutorResponse();
 
         // Implement the actual task logic here
-        if (STATUS_ATTR_REQUIRED.equals(context.getExecutorStatus())) {
+//        if (STATUS_ATTR_REQUIRED.equals(context.getExecutorStatus())) {
             if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(EMAIL_ADDRESS)) {
                 response.setResult(STATUS_ACTION_COMPLETE);
                 Map<String,Object> updatedUserClaims = new HashMap<>();
                 updatedUserClaims.put(EMAIL_ADDRESS, userInputs.get(EMAIL_ADDRESS));
                 response.setUpdatedUserClaims(updatedUserClaims);
                 return response;
-            }
-        }
-        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
+            } else {
+//        }
+//        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
             response.setResult(STATUS_ATTR_REQUIRED);
             response.setRequiredData(getEmailMetaData());
             return response;
         }
-        response.setResult("ERROR");
-        return response;
+//        response.setResult("ERROR");
+//        return response;
     }
 
 
@@ -110,16 +110,16 @@ public class EmailOTPExecutorTest implements Authentication, AttributeCollection
         ExecutorResponse response = new ExecutorResponse();
 
         // Implement the actual task logic here
-        if (STATUS_VERIFICATION_REQUIRED.equals(context.getExecutorStatus())) {
+//        if (STATUS_VERIFICATION_REQUIRED.equals(context.getExecutorStatus())) {
             if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(EMAIL_OTP)) {
                 response.setResult(STATUS_ACTION_COMPLETE);
                 Map<String, Object> updatedUserClaims = new HashMap<>();
                 updatedUserClaims.put(EMAIL_VERIFIED_CLAIM_URI, "true");
                 response.setUpdatedUserClaims(updatedUserClaims);
                 return response;
-            }
-        }
-        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
+            } else {
+//        }
+//        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
             response.setResult(STATUS_VERIFICATION_REQUIRED);
             response.setRequiredData(getOTPMetaData());
             Map<String, Object> contextProperties = new HashMap<>();
@@ -127,8 +127,8 @@ public class EmailOTPExecutorTest implements Authentication, AttributeCollection
             response.setContextProperty(contextProperties);
             return response;
         }
-        response.setResult("ERROR");
-        return response;
+//        response.setResult("ERROR");
+//        return response;
     }
 
     @Override

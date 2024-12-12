@@ -57,6 +57,12 @@ public class TaskExecutionNode extends AbstractNode implements InputCollectionNo
         this.executor = executor;
     }
 
+    public TaskExecutionNode(String id, Executor executor) {
+
+        super(id);
+        this.executor = executor;
+    }
+
     /**
      * Get the executor associated with the node.
      *
@@ -169,14 +175,11 @@ public class TaskExecutionNode extends AbstractNode implements InputCollectionNo
     private NodeResponse handleIncompleteStatus(RegistrationContext context, ExecutorResponse response) {
 
         context.setExecutorStatus(response.getResult());
-        context.addProperties(response.getContextProperties());
-
-        NodeResponse nodeResponse;
-        if (STATUS_EXTERNAL_REDIRECTION.equals(response.getResult())) {
-            nodeResponse = new NodeResponse(STATUS_EXTERNAL_REDIRECTION);
-        } else {
-            nodeResponse = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
+        if (response.getContextProperties() != null && !response.getContextProperties().isEmpty()) {
+            context.addProperties(response.getContextProperties());
         }
+
+        NodeResponse nodeResponse = new NodeResponse(response.getResult());
         nodeResponse.addInputMetaData(response.getRequiredData());
         nodeResponse.addAdditionalInfo(response.getAdditionalInfo());
         nodeResponse.setMessage(response.getMessage());
@@ -186,7 +189,8 @@ public class TaskExecutionNode extends AbstractNode implements InputCollectionNo
     private void handleCompleteStatus(RegistrationContext context, ExecutorResponse response)
             throws RegistrationServerException {
 
-        if (!response.getRequiredData().isEmpty() || !response.getAdditionalInfo().isEmpty()) {
+        if ((response.getRequiredData() != null && !response.getRequiredData().isEmpty()) ||
+                (response.getAdditionalInfo() != null && !response.getAdditionalInfo().isEmpty())) {
             throw new RegistrationServerException(ERROR_EXECUTOR_UNHANDLED_DATA.getCode(),
                                                   ERROR_EXECUTOR_UNHANDLED_DATA.getMessage(),
                                                   String.format(ERROR_EXECUTOR_UNHANDLED_DATA.getDescription(),

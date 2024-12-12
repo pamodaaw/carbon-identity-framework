@@ -34,7 +34,6 @@ import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataHandler;
 import org.wso2.carbon.identity.claim.metadata.mgt.exception.ClaimMetadataException;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
-import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationClientException;
 import org.wso2.carbon.identity.user.self.registration.cache.RegistrationContextCache;
 import org.wso2.carbon.identity.user.self.registration.cache.RegistrationContextCacheEntry;
@@ -42,13 +41,7 @@ import org.wso2.carbon.identity.user.self.registration.cache.RegistrationContext
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.internal.UserRegistrationServiceDataHolder;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
-import org.wso2.carbon.identity.user.self.registration.model.RegistrationRequestedUser;
 import org.wso2.carbon.user.api.Tenant;
-import org.wso2.carbon.user.api.UserStoreException;
-import org.wso2.carbon.user.api.UserStoreManager;
-import org.wso2.carbon.user.core.common.AbstractUserStoreManager;
-import org.wso2.carbon.user.core.service.RealmService;
-import org.wso2.carbon.user.mgt.common.DefaultPasswordGenerator;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.Arrays;

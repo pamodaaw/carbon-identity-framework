@@ -20,7 +20,6 @@ package org.wso2.carbon.identity.user.self.registration.temp;
 
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ACTION_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
-import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_CRED_REQUIRED;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_EXTERNAL_REDIRECTION;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NEXT_ACTION_PENDING;
 import java.util.ArrayList;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import org.wso2.carbon.identity.user.self.registration.action.AttributeCollection;
 import org.wso2.carbon.identity.user.self.registration.action.Authentication;
-import org.wso2.carbon.identity.user.self.registration.action.CredentialEnrollment;
 import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
 import org.wso2.carbon.identity.user.self.registration.model.InitData;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
@@ -57,23 +55,23 @@ public class GoogleSignupTest implements Authentication, AttributeCollection {
         ExecutorResponse response = new ExecutorResponse();
 
         // Implement the actual task logic here
-        if (STATUS_ATTR_REQUIRED.equals(context.getExecutorStatus())) {
+//        if (STATUS_ATTR_REQUIRED.equals(context.getExecutorStatus())) {
             if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(ID_TOKEN)) {
                 response.setResult(STATUS_ACTION_COMPLETE);
                 Map<String, Object> updatedClaims = new HashMap<>();
                 updatedClaims.put("claimURI", userInputs.get(ID_TOKEN));
                 response.setUpdatedUserClaims(updatedClaims);
                 return response;
-            }
-        }
-        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
+            } else {
+//        }
+//        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
             response.setResult(STATUS_ATTR_REQUIRED);
             response.setRequiredData(getIdTokenRequirement());
             response.setAdditionalInfo(getConfigurations());
             return response;
         }
-        response.setResult("ERROR");
-        return response;
+//        response.setResult("ERROR");
+//        return response;
     }
 
 

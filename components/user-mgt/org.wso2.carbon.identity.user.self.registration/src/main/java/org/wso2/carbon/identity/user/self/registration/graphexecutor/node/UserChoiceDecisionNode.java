@@ -19,10 +19,10 @@
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
 import java.util.Map;
+import org.wso2.carbon.identity.user.self.registration.model.RegSequence;
 import org.wso2.carbon.identity.user.self.registration.util.Constants;
 import org.wso2.carbon.identity.user.self.registration.executor.Executor;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
-import org.wso2.carbon.identity.user.self.registration.model.InputData;
 import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
@@ -37,11 +37,23 @@ import static org.wso2.carbon.identity.user.self.registration.util.Constants.STA
 public class UserChoiceDecisionNode extends AbstractNode implements InputCollectionNode {
 
     private List<Node> nextNodes = new ArrayList<>(); // For branching paths
-    private static final String USER_CHOICE = "user-choice";
+    private final InputMetaData inputMetaData;
 
     public UserChoiceDecisionNode() {
 
         super();
+        String id = getNodeId();
+        inputMetaData = new InputMetaData(id, "user-choice", "multiple-options", 1);
+        inputMetaData.setMandatory(true);
+        inputMetaData.setI18nKey("user.choice");
+    }
+
+    public UserChoiceDecisionNode(String id) {
+
+        super(id);
+        inputMetaData = new InputMetaData(id, "user-choice", "multiple-options", 1);
+        inputMetaData.setMandatory(true);
+        inputMetaData.setI18nKey("user.choice");
     }
 
     /**
@@ -69,7 +81,7 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
      *
      * @param node Task Executor Node.
      */
-    public void addNextNode(TaskExecutionNode node) {
+    public void addNextNodeId(Node node) {
 
         this.nextNodes.add(node);
     }
@@ -79,22 +91,21 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
 
         Map<String, String> inputData = context.getUserInputData();
 
-        if (inputData != null && inputData.containsKey(USER_CHOICE)) {
+        if (inputData != null && inputData.containsKey(inputMetaData.getName())) {
             for (Node nextNode : nextNodes) {
                 if (nextNode instanceof TaskExecutionNode) {
                     Executor executor = ((TaskExecutionNode) nextNode).getExecutor();
                     if (executor != null) {
                         String executorName = executor.getName();
-                        if (inputData.get(USER_CHOICE).equals(executorName)) {
-                            setNextNode(nextNode);
-                            inputData.remove(USER_CHOICE);
+                        if (inputData.get(inputMetaData.getName()).equals(executorName)) {
+                            setNextNodeId(nextNode.getNodeId());
                             break;
                         }
                     }
                 }
             }
         }
-        if (getNextNode() != null) {
+        if (getNextNodeId() != null) {
             return new NodeResponse(Constants.STATUS_NODE_COMPLETE);
         }
         NodeResponse response = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
@@ -105,22 +116,19 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
     @Override
     public List<InputMetaData> getRequiredData() {
 
-        if (getNextNode() != null) {
+        if (getNextNodeId() != null) {
             return null;
         }
-
-        InputMetaData meta = new InputMetaData(USER_CHOICE, USER_CHOICE, "multiple-options", 1);
-        meta.setMandatory(true);
-        meta.setI18nKey("user.choice");
         for (Node nextNode : nextNodes) {
             if (nextNode instanceof TaskExecutionNode) {
-                meta.addOption(((TaskExecutionNode)nextNode).getExecutor().getName());
+                inputMetaData.addOption(((TaskExecutionNode)nextNode).getExecutor().getName());
             } else {
-                meta.addOption(nextNode.getNodeId());
+                inputMetaData.addOption(nextNode.getNodeId());
             }
         }
+
         List<InputMetaData> inputMetaList = new ArrayList<>();
-        inputMetaList.add(meta);
+        inputMetaList.add(inputMetaData);
         return inputMetaList;
     }
 }

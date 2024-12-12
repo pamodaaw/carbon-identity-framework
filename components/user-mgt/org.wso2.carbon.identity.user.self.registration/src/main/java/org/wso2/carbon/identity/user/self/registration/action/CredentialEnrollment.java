@@ -18,7 +18,6 @@
 
 package org.wso2.carbon.identity.user.self.registration.action;
 
-import java.util.Map;
 import org.wso2.carbon.identity.user.self.registration.executor.Executor;
 import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
 import org.wso2.carbon.identity.user.self.registration.model.InitData;

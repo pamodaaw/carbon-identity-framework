@@ -18,8 +18,6 @@
 
 package org.wso2.carbon.identity.user.self.registration;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
@@ -47,6 +45,7 @@ public class UserRegistrationFlowService {
     private static final Log LOG = LogFactory.getLog(UserRegistrationFlowService.class);
     private static final UserRegistrationFlowService instance = new UserRegistrationFlowService();
 
+    // todo why osgi services?
     public static UserRegistrationFlowService getInstance() {
 
         return instance;
@@ -64,6 +63,8 @@ public class UserRegistrationFlowService {
         String flowId = UUID.randomUUID().toString();
         RegistrationContext context = new RegistrationContext();
         RegSequence sequence = new AuthBasedSequenceLoader().loadSequence(appId);
+        // todo resolve the tenant.
+        context.setTenantDomain("carbon.super");
         context.setRegSequence(sequence);
         context.setContextIdentifier(flowId);
 
@@ -75,6 +76,7 @@ public class UserRegistrationFlowService {
         }
 
         NodeResponse response = sequence.execute(context);
+        // todo implement the context and profile storing layer.
         RegistrationFrameworkUtils.addRegContextToCache(context);
 
         // todo include the details for UI rendering.
@@ -100,7 +102,8 @@ public class UserRegistrationFlowService {
         context.updateRequiredDataWithInputs(inputs.getUserInput());
         NodeResponse response = sequence.execute(context);
         ExecutionState state = new ExecutionState(flowId, response);
-        // Save the current sequence in the context.
+
+        // todo implement the context and profile storing layer.
         RegistrationFrameworkUtils.addRegContextToCache(context);
 
         // todo include the details for UI rendering.

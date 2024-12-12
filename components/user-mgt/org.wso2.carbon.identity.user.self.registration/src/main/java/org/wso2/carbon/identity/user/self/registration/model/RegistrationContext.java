@@ -43,6 +43,7 @@ public class RegistrationContext implements Serializable {
     private String userAssertion;
     private String userId;
 
+    // todo separate general and registration specific properties.
     private final List<String> authenticatedMethods = new ArrayList<>();
     private Map<String, Object> properties = new HashMap<>();
 
@@ -164,14 +165,13 @@ public class RegistrationContext implements Serializable {
      */
     public void updateRequiredDataWithInputs(Map<String, String> userInput) {
 
-        requiredMetaData.removeIf(inputMetaData -> {
-            String inputName = inputMetaData.getName();
-            if (userInput.containsKey(inputName)) {
-                userInputData.put(inputName, userInput.get(inputName));
-                return true;
+        // Iterate the userInput map and print the key and value.
+        for (String key : userInput.keySet()) {
+            userInputData.put(key, userInput.get(key));
+            if (requiredMetaData != null) {
+                requiredMetaData.removeIf(inputMetaData -> inputMetaData.getName().equals(key));
             }
-            return false;
-        });
+        }
     }
 
     public String getUserAssertion() {

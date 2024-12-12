@@ -18,22 +18,26 @@
 
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
-import java.util.Map;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NODE_COMPLETE;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_PROMPT_ONLY;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
-import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
-
-import java.util.List;
+import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
+import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 /**
- * Interface for a node in the registration flow graph that collects input data.
+ * Node to combine input requirements of multiple nodes and prompt.
  */
-public interface InputCollectionNode extends Node {
+public class InputCollectNode extends AbstractNode {
 
-    /**
-     * Get the list of data required for the node along with the metadata.
-     *
-     * @return  The list of data required for the node along with the metadata.
-     */
-    List<InputMetaData> getRequiredData() throws RegistrationFrameworkException;
+    public InputCollectNode(String id) {
 
+         super(id);
+    }
+
+    @Override
+    public NodeResponse execute(RegistrationContext context) throws RegistrationFrameworkException {
+
+        // Only declare the data required. So this node is complete.
+        return new NodeResponse(STATUS_PROMPT_ONLY);
+    }
 }
