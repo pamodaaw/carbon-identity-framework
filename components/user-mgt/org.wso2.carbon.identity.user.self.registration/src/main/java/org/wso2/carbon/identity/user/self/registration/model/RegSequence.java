@@ -25,6 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationServerException;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.Node;
+import org.wso2.carbon.identity.user.self.registration.mgt.dto.PageDTO;
 import org.wso2.carbon.identity.user.self.registration.util.Constants;
 
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_EXTERNAL_REDIRECTION;
@@ -44,6 +45,7 @@ public class RegSequence {
     private String firstNodeId;
     private Map<String, Node> nodeList;
     private Map<String, String> pageIdList;
+    private Map<String, PageDTO> pageDTOMap;
 
     public RegSequence() {
 
@@ -107,6 +109,16 @@ public class RegSequence {
         this.nodeList = nodeList;
     }
 
+    public PageDTO getPageDTOMap(String pageId) {
+
+        return pageDTOMap.get(pageId);
+    }
+
+    public void setPageDTOMap( Map<String, PageDTO> pageDTOMap) {
+
+        this.pageDTOMap = pageDTOMap;
+    }
+
     /**
      * Execute the registration sequence.
      *
@@ -146,7 +158,7 @@ public class RegSequence {
                 if (LOG.isDebugEnabled()){
                     LOG.debug("Prompt only node is completed. Move to next node if there are any.");
                 }
-                nodeResponse.setPageId(getPageId(currentNode.getNodeId(), nodeResponse.getStatus()));
+                nodeResponse.setPageDTO(getPageId(currentNode.getNodeId(), nodeResponse.getStatus()));
                 nodeResponse.setStatus(STATUS_USER_INPUT_REQUIRED);
                 currentNode = moveToNextNode(currentNode);
                 context.setCurrentNode(currentNode);
@@ -160,7 +172,7 @@ public class RegSequence {
                 if (STATUS_EXTERNAL_REDIRECTION.equals(nodeResponse.getStatus())) {
                     nodeResponse.setStatus(STATUS_EXTERNAL_REDIRECTION);
                 } else {
-                    nodeResponse.setPageId(getPageId(currentNode.getNodeId(), nodeResponse.getStatus()));
+                    nodeResponse.setPageDTO(getPageId(currentNode.getNodeId(), nodeResponse.getStatus()));
                     nodeResponse.setStatus(STATUS_USER_INPUT_REQUIRED);
                 }
                 return nodeResponse;
@@ -203,7 +215,7 @@ public class RegSequence {
         return response;
     }
 
-    private String getPageId(String nodeId, String status) throws RegistrationServerException {
+    private PageDTO getPageId(String nodeId, String status) throws RegistrationServerException {
 
         String pageId = null;
         if (Constants.STATUS_ATTR_REQUIRED.equals(status)) {
@@ -219,6 +231,6 @@ public class RegSequence {
                 throw new RegistrationServerException("Could not resolve a valid page to be prompt.");
             }
         }
-        return pageId;
+        return pageDTOMap.get(pageId);
     }
 }

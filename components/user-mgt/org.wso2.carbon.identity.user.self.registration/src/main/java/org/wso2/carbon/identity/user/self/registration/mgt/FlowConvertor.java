@@ -35,18 +35,6 @@ import org.wso2.carbon.identity.user.self.registration.mgt.dto.RegistrationDTO;
 
 public class FlowConvertor {
 
-    private static final Log LOG = LogFactory.getLog(FlowConvertor.class);
-
-    public static void createRegistrationFlow() {
-
-//        RegistrationDTO registrationDTO = adapt();
-//        if (registrationDTO == null) {
-//            LOG.error("Error while converting the registration flow.");
-//            return; // Return if the registration flow is not created
-//        }
-//        RegistrationFlowDAO.insertRegistrationFlow()
-    }
-
     private static JsonNode loadFlow(String flowId) throws IOException {
 
         String fileName = flowId + ".json";

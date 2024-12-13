@@ -42,6 +42,7 @@ import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.TaskEx
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.UserChoiceDecisionNode;
 import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.UserOnboardNode;
 import org.wso2.carbon.identity.user.self.registration.mgt.FlowConvertor;
+import org.wso2.carbon.identity.user.self.registration.mgt.FlowToPageConvertor;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.NodeDTO;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.RegistrationDTO;
 import org.wso2.carbon.identity.user.self.registration.util.RegistrationFrameworkUtils;
@@ -447,12 +448,14 @@ public class AuthBasedSequenceLoader {
         RegistrationDTO regDto;
         try {
             regDto = FlowConvertor.adapt(flowId);
+            regDto.setPageDTOs(FlowToPageConvertor.convert(flowId));
         } catch (IOException e) {
             throw new RegistrationServerException("Error while converting the registration flow.", e);
         }
 
         RegSequence sequence = new RegSequence();
         sequence.setId(regDto.getFlowID());
+        sequence.setPageDTOMap(regDto.getPageDTOs());
         for (NodeDTO nodeDTO : regDto.getNodeDTOList().values()) {
             Node node;
 

@@ -100,4 +100,19 @@ public class RegistrationDTO {
 
         return  this.nodeDTOList;
     }
+
+    public void setNodeDTOList(Map<String, NodeDTO> nodeDTOList) {
+
+        this.nodeDTOList = nodeDTOList;
+    }
+
+    public Map<String, PageDTO> getPageDTOs() {
+
+        return pageDTOs;
+    }
+
+    public void setPageDTOs( Map<String, PageDTO> pageDTOs) {
+
+        this.pageDTOs = pageDTOs;
+    }
 }
