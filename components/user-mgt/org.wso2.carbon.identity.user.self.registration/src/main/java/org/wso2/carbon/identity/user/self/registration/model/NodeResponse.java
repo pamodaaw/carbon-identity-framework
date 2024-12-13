@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.wso2.carbon.identity.user.self.registration.mgt.dto.PageDTO;
 
 /**
  * Model class to represent the response of a node in the registration sequence.
@@ -33,7 +34,7 @@ public class NodeResponse {
     private Map<String, String> additionalInfo = new HashMap<>();
     private String userAssertion;
     private Message message;
-    private String pageId;
+    private PageDTO pageDTO;
 
     public NodeResponse(String status) {
 
@@ -98,13 +99,13 @@ public class NodeResponse {
         this.additionalInfo = additionalInfo;
     }
 
-    public String getPageId() {
+    public PageDTO getPage() {
 
-        return pageId;
+        return pageDTO;
     }
 
-    public void setPageId(String pageId) {
+    public void setPageDTO(PageDTO page) {
 
-        this.pageId = pageId;
+        this.pageDTO = page;
     }
 }

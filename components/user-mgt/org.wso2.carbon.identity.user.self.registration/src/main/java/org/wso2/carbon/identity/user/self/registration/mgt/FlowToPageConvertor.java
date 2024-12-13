@@ -2,6 +2,9 @@ package org.wso2.carbon.identity.user.self.registration.mgt;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
@@ -12,8 +15,21 @@ import org.wso2.carbon.identity.user.self.registration.mgt.dto.PageDTO;
 
 public class FlowToPageConvertor {
 
-    public static Map<String, PageDTO> convert(JsonNode rootNode) {
+    private static JsonNode loadFlow(String flowId) throws IOException {
 
+        String fileName = flowId + ".json";
+        InputStream inputStream = FlowConvertor.class.getClassLoader().getResourceAsStream(fileName);
+        if (inputStream == null) {
+            throw new IllegalArgumentException("File not found: " + fileName);
+        }
+        ObjectMapper objectMapper = new ObjectMapper();
+        return objectMapper.readTree(inputStream);
+    }
+
+
+    public static Map<String, PageDTO> convert(String flowId) throws IOException {
+
+        JsonNode rootNode = loadFlow(flowId);
         Map<String, ElementDTO> elementDTOMap = processElements(rootNode);
         Map<String, BlockDTO> blockDTOMap = processBlocks(rootNode);
 
