@@ -118,19 +118,20 @@ public class FlowConvertor {
 
                 NodeDTO nodeDTO;
                 if ("EXECUTOR".equals(actionType)) {
-                    ArrayNode executorNameArray = (ArrayNode) action.get("name");
+                    ArrayNode executorsArray = (ArrayNode) action.get("executors");
                     boolean firstExecutorInArray = true;
                     NodeDTO prevNode = null;
-                    for (JsonNode executorName : executorNameArray) {
-                        String executorID = executorName.asText();
+                    for (JsonNode executor : executorsArray) {
+                        String executorID = executor.get("id").asText();
+                        String executorName = executor.get("name").asText();
                         if (firstExecutorInArray) {
-                            nodeDTO = createExecutorNode(actionId, nextNodeId, executorID);
+                            nodeDTO = createExecutorNode(actionId, nextNodeId, executorID, executorName);
                             nextActionNodeDTOS.add(nodeDTO);
                             firstExecutorInArray = false;
                             prevNode = nodeDTO;
                         } else {
                             String nextExecutorId = UUID.randomUUID().toString();
-                            nodeDTO = createExecutorNode(nextExecutorId, nextNodeId, executorID);
+                            nodeDTO = createExecutorNode(nextExecutorId, nextNodeId, executorID, executorName);
                             prevNode.getNextNodes().remove(nextNodeId);
                             prevNode.addNextNode(nextExecutorId);
                             sequence.addNode(nodeDTO);
@@ -139,22 +140,24 @@ public class FlowConvertor {
                 } else if ("RULE".equals(actionType)) {
                     System.out.println("Info: Create Rule Node for " + actionId);
                 } else if ("NEXT".equals(actionType)) {
-                    String pageActionType = action.has("meta") && action.get("meta").has("actionType")
-                            ? action.get("meta").get("actionType").asText()
-                            : "INIT";
+                    if (action.has("meta")) {
+                        String pageActionType = action.has("meta") && action.get("meta").has("actionType")
+                                ? action.get("meta").get("actionType").asText()
+                                : "INIT";
 
-                    for (NodeDTO node : sequence.getNodes().values()) {
-                        if (node.getNextNodes().contains(jnodeId)) {
-                            System.out.println(
-                                    "NEXT action found. Found node " + node.getId() + " with next node " + jnodeId);
-                            node.getNextNodes().remove(jnodeId);
-                            node.addNextNode(nextNodeId);
-                            node.addPageIds(pageActionType, jnodeId);
+                        for (NodeDTO node : sequence.getNodes().values()) {
+                            if (node.getNextNodes().contains(jnodeId)) {
+                                System.out.println(
+                                        "NEXT action found. Found node " + node.getId() + " with next node " + jnodeId);
+                                node.getNextNodes().remove(jnodeId);
+                                node.addNextNode(nextNodeId);
+                                node.addPageIds(pageActionType, jnodeId);
+                            }
                         }
+                    } else {
+                        nodeDTO = createInputCollectorNode(actionId, nextNodeId);
+                        nextActionNodeDTOS.add(nodeDTO);
                     }
-                } else if ("SUBMIT".equals(actionType)) {
-                    nodeDTO = createInputCollectorNode(actionId, nextNodeId);
-                    nextActionNodeDTOS.add(nodeDTO);
                 }
             }
 
@@ -214,12 +217,13 @@ public class FlowConvertor {
         return new NodeDTO(id, "USER_ONBOARDING");
     }
 
-    private static NodeDTO createExecutorNode(String id, String nextNodeId, String executorID) {
+    private static NodeDTO createExecutorNode(String id, String nextNodeId, String executorID, String exName) {
 
         System.out.println("Info: Create Executor Node for " + id);
         NodeDTO node = new NodeDTO(id, "EXECUTOR");
         node.addNextNode(nextNodeId);
         node.addProperty("EXECUTOR_ID", executorID);
+        node.addProperty("EXECUTOR_NAME", exName);
         return node;
     }
 }

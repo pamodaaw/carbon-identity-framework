@@ -34,30 +34,45 @@
             ],
             "actions": [
                 {
-                    "id": "flow-action-password-onboarder-p563u9Yn",
+                    "id": "flow-action-password-ty203491",
                     "action": {
                         "type": "EXECUTOR",
-                        "name": ["PasswordOnboarder"]
+                        "executors": [
+                            {
+                                "id": "flow-action-password-onboarder-p563u9Yn",
+                                "name": "PasswordOnboarder"
+                            }
+                        ]
                     },
                     "next": [
                         "flow-node-2"
                     ]
                 },
                 {
-                    "id": "flow-action-email-otp-verifier-5t8uJ6D3",
+                    "id": "flow-action-email-394ksdj3",
                     "action": {
                         "type": "EXECUTOR",
-                        "name": ["EmailOTPVerifier"]
+                        "executors": [
+                            {
+                                "id": "flow-action-email-otp-verifier-5t8uJ6D3",
+                                "name": "EmailOTPVerifier"
+                            }
+                        ]
                     },
                     "next": [
                         "flow-node-3"
                     ]
                 },
                 {
-                    "id": "flow-action-google-sign-up-Rt8uJ6D3",
+                    "id": "flow-action-google-WeP34234",
                     "action": {
                         "type": "EXECUTOR",
-                        "name": ["GoogleSignUp"]
+                        "executors": [
+                            {
+                                "id": "flow-action-google-sign-up-Rt8uJ6D3",
+                                "name": "GoogleSignUp"
+                            }
+                        ]
                     },
                     "next": [
                         "flow-node-5"
@@ -168,7 +183,7 @@
                 {
                     "id": "flow-action-done-5t8uJ6D3",
                     "action": {
-                        "type": "SUBMIT"
+                        "type": "NEXT"
                     },
                     "next": [
                         "COMPLETE"
@@ -225,15 +240,12 @@
         {
             "id": "flow-display-header-8uJ6t4D3",
             "category": "DISPLAY",
-            "type": "RICH_TEXT",
+            "type": "TYPOGRAPHY",
             "version": "0.1.0",
+            "variant": "H3",
             "config": {
                 "field": {
-                    "className": "wso2is-rich-text",
-                    "text": "<h3 class=\"ui header\">Register Account</h3>"
-                },
-                "styles": {
-                    "textAlign": "center"
+                    "text": "Register Account"
                 }
             }
         },
@@ -247,17 +259,11 @@
                 "field": {
                     "type": "text",
                     "name": "username",
-                    "className": "wso2is-input text",
                     "hint": "",
                     "label": "Username",
                     "required": true,
-                    "multiline": false,
-                    "placeholder": "Enter your username",
-                    "defaultValue": "",
-                    "minLength": 3,
-                    "maxLength": 50
-                },
-                "styles": {}
+                    "placeholder": "Enter your username"
+                }
             }
         },
         {
@@ -269,18 +275,12 @@
             "config": {
                 "field": {
                     "type": "text",
-                    "name": "firstName",
-                    "className": "wso2is-input text",
+                    "name": "http://wso2.org/claims/givenname",
                     "hint": "",
                     "label": "First Name",
                     "required": true,
-                    "multiline": false,
-                    "placeholder": "Enter your first name",
-                    "defaultValue": "",
-                    "minLength": 3,
-                    "maxLength": 50
-                },
-                "styles": {}
+                    "placeholder": "Enter your first name"
+                }
             }
         },
         {
@@ -292,18 +292,12 @@
             "config": {
                 "field": {
                     "type": "text",
-                    "name": "lastName",
-                    "className": "wso2is-input text",
+                    "name": "http://wso2.org/claims/lastname",
                     "hint": "",
                     "label": "Last Name",
                     "required": true,
-                    "multiline": false,
-                    "placeholder": "Enter your last name",
-                    "defaultValue": "",
-                    "minLength": 3,
-                    "maxLength": 50
-                },
-                "styles": {}
+                    "placeholder": "Enter your last name"
+                }
             }
         },
         {
@@ -315,16 +309,12 @@
             "config": {
                 "field": {
                     "type": "date",
-                    "name": "dob",
-                    "className": "wso2is-input date",
+                    "name": "http://wso2.org/claims/dob",
                     "hint": "",
                     "label": "Birth Date",
                     "required": false,
-                    "multiline": false,
-                    "placeholder": "Enter your birth date",
-                    "defaultValue": ""
-                },
-                "styles": {}
+                    "placeholder": "Enter your birth date"
+                }
             }
         },
         {
@@ -336,11 +326,7 @@
             "config": {
                 "field": {
                     "type": "submit",
-                    "className": "wso2is-button",
                     "text": "Continue with Password"
-                },
-                "styles": {
-                    "width": "100%"
                 }
             }
         },
@@ -352,10 +338,8 @@
             "variant": "HORIZONTAL",
             "config": {
                 "field": {
-                    "className": "wso2is-divider-horizontal",
                     "text": "Or"
-                },
-                "styles": {}
+                }
             }
         },
         {
@@ -367,13 +351,8 @@
             "variant": "PRIMARY",
             "config": {
                 "field": {
-                    "action": "EmailOTPVerifier",
                     "type": "submit",
-                    "className": "wso2is-button",
                     "label": "Continue with Email OTP"
-                },
-                "styles": {
-                    "width": "100%"
                 }
             }
         },
@@ -385,10 +364,8 @@
             "variant": "HORIZONTAL",
             "config": {
                 "field": {
-                    "className": "wso2is-divider-horizontal",
                     "text": "Or"
-                },
-                "styles": {}
+                }
             }
         },
         {
@@ -397,31 +374,23 @@
             "type": "BUTTON",
             "version": "0.1.0",
             "deprecated": false,
-            "variant": "SOCIAL_BUTTON",
+            "variant": "SOCIAL",
             "config": {
                 "field": {
-                    "action": "GoogleSignUp",
                     "type": "button",
-                    "className": "wso2is-social-button",
                     "label": "Continue with Google Sign Up"
-                },
-                "styles": {
-                    "width": "100%"
                 }
             }
         },
         {
             "id": "flow-display-header-hj6t4D3",
             "category": "DISPLAY",
-            "type": "RICH_TEXT",
+            "type": "TYPOGRAPHY",
             "version": "0.1.0",
+            "variant": "H3",
             "config": {
                 "field": {
-                    "className": "wso2is-rich-text",
-                    "text": "<h3 class=\"ui header\">Enter Password</h3>"
-                },
-                "styles": {
-                    "textAlign": "center"
+                    "text": "Enter Password"
                 }
             }
         },
@@ -435,15 +404,11 @@
                 "field": {
                     "type": "password",
                     "name": "password",
-                    "className": "wso2is-input password",
                     "hint": "",
                     "label": "Password",
                     "required": true,
-                    "multiline": false,
-                    "placeholder": "Enter your password",
-                    "defaultValue": ""
-                },
-                "styles": {}
+                    "placeholder": "Enter your password"
+                }
             }
         },
         {
@@ -456,15 +421,11 @@
                 "field": {
                     "type": "password",
                     "name": "confirmPassword",
-                    "className": "wso2is-input password",
                     "hint": "",
                     "label": "Confirm Password",
                     "required": true,
-                    "multiline": false,
-                    "placeholder": "Re-enter your password",
-                    "defaultValue": ""
-                },
-                "styles": {}
+                    "placeholder": "Re-enter your password"
+                }
             }
         },
         {
@@ -476,26 +437,19 @@
             "config": {
                 "field": {
                     "type": "submit",
-                    "className": "wso2is-button",
                     "text": "Next"
-                },
-                "styles": {
-                    "width": "100%"
                 }
             }
         },
         {
             "id": "flow-display-header-hj6t4D3",
             "category": "DISPLAY",
-            "type": "RICH_TEXT",
+            "type": "TYPOGRAPHY",
             "version": "0.1.0",
+            "variant": "H3",
             "config": {
                 "field": {
-                    "className": "wso2is-rich-text",
-                    "text": "<h3 class=\"ui header\">Enter Email</h3>"
-                },
-                "styles": {
-                    "textAlign": "center"
+                    "text": "Enter Email"
                 }
             }
         },
@@ -509,15 +463,11 @@
                 "field": {
                     "type": "email",
                     "name": "email",
-                    "className": "wso2is-input email",
                     "hint": "",
                     "label": "Email",
                     "required": true,
-                    "multiline": false,
-                    "placeholder": "Enter your email address",
-                    "defaultValue": ""
-                },
-                "styles": {}
+                    "placeholder": "Enter your email address"
+                }
             }
         },
         {
@@ -529,11 +479,7 @@
             "config": {
                 "field": {
                     "type": "submit",
-                    "className": "wso2is-button",
                     "text": "Continue"
-                },
-                "styles": {
-                    "width": "100%"
                 }
             }
         },
@@ -546,26 +492,19 @@
             "config": {
                 "field": {
                     "type": "submit",
-                    "className": "wso2is-button",
                     "text": "Go back"
-                },
-                "styles": {
-                    "width": "100%"
                 }
             }
         },
         {
             "id": "flow-display-header-GG456y7",
             "category": "DISPLAY",
-            "type": "RICH_TEXT",
+            "type": "TYPOGRAPHY",
             "version": "0.1.0",
+            "variant": "H3",
             "config": {
                 "field": {
-                    "className": "wso2is-rich-text",
-                    "text": "<h3 class=\"ui header\">OTP Verification</h3>"
-                },
-                "styles": {
-                    "textAlign": "center"
+                    "text": "OTP Verification"
                 }
             }
         },
@@ -579,15 +518,11 @@
                 "field": {
                     "type": "text",
                     "name": "otp",
-                    "className": "wso2is-input otp",
                     "hint": "",
                     "label": "OTP",
                     "required": true,
-                    "multiline": false,
-                    "placeholder": "Enter the OTP",
-                    "defaultValue": ""
-                },
-                "styles": {}
+                    "placeholder": "Enter the OTP"
+                }
             }
         },
         {
@@ -599,11 +534,7 @@
             "config": {
                 "field": {
                     "type": "submit",
-                    "className": "wso2is-button",
                     "text": "Continue"
-                },
-                "styles": {
-                    "width": "100%"
                 }
             }
         },
@@ -616,26 +547,19 @@
             "config": {
                 "field": {
                     "type": "submit",
-                    "className": "wso2is-button",
                     "text": "Go back"
-                },
-                "styles": {
-                    "width": "100%"
                 }
             }
         },
         {
             "id": "flow-display-header-45wTrU",
             "category": "DISPLAY",
-            "type": "RICH_TEXT",
+            "type": "TYPOGRAPHY",
             "version": "0.1.0",
+            "variant": "H3",
             "config": {
                 "field": {
-                    "className": "wso2is-rich-text",
-                    "text": "<h3 class=\"ui header\">Enter Personal Details</h3>"
-                },
-                "styles": {
-                    "textAlign": "center"
+                    "text": "Enter Personal Details"
                 }
             }
         },
@@ -649,15 +573,11 @@
                 "field": {
                     "type": "text",
                     "name": "nic",
-                    "className": "wso2is-text-input",
                     "hint": "",
                     "label": "NIC",
                     "required": true,
-                    "multiline": false,
-                    "placeholder": "Enter your national identity card number",
-                    "defaultValue": ""
-                },
-                "styles": {}
+                    "placeholder": "Enter your national identity card number"
+                }
             }
         },
         {
@@ -670,11 +590,7 @@
             "config": {
                 "field": {
                     "type": "submit",
-                    "className": "wso2is-button",
                     "label": "Done"
-                },
-                "styles": {
-                    "width": "100%"
                 }
             }
         }
