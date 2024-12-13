@@ -18,17 +18,22 @@
 
 package org.wso2.carbon.identity.user.self.registration.mgt.dto;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class PageDTO {
 
     private String id;
-    private String flowId;
-    private String content;
+    List<ElementDTO> elements = new ArrayList<>();
+    List<BlockDTO> blocks = new ArrayList<>();
+
+    public PageDTO() {
+
+    }
 
     public PageDTO(String id, String content, String flowId) {
 
         this.id = id;
-        this.flowId = flowId;
-        this.content = content;
     }
 
     public String getId() {
@@ -36,28 +41,33 @@ public class PageDTO {
         return id;
     }
 
-    public String getFlowId() {
-
-        return flowId;
-    }
-
     public void setId(String id) {
 
         this.id = id;
     }
 
-    public void setFlowId(String flowId) {
+    public List<ElementDTO> getElements() {
 
-        this.flowId = flowId;
+        return elements;
     }
 
-    public String getContent() {
+    public void setElements(List<ElementDTO> elements) {
 
-        return content;
+        this.elements = elements;
     }
 
-    public void setContent(String content) {
+    public void addElement(ElementDTO element) {
 
-        this.content = content;
+        this.elements.add(element);
+    }
+
+    public void addBlock(BlockDTO block) {
+
+        this.blocks.add(block);
+    }
+
+    public List<BlockDTO> getBlocks() {
+
+        return blocks;
     }
 }

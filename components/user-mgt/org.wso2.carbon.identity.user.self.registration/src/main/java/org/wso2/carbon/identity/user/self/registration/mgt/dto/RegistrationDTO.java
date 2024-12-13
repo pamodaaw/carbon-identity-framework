@@ -29,12 +29,12 @@ public class RegistrationDTO {
     private String tenantID;
     private String firstNode;
     private Map<String, NodeDTO> nodeDTOList;
-    private List<PageDTO> pageDTOs;
+    private Map<String, PageDTO> pageDTOs;
 
     public RegistrationDTO() {
 
         this.nodeDTOList = new HashMap<>();
-        this.pageDTOs = new ArrayList<>();
+        this.pageDTOs = new HashMap<>();
     }
 
     public RegistrationDTO(String flowID, String tenantID, String firstNode) {
@@ -43,7 +43,8 @@ public class RegistrationDTO {
         this.tenantID = tenantID;
         this.firstNode = firstNode;
         this.nodeDTOList = new HashMap<>();
-        this.pageDTOs = new ArrayList<>();
+        this.pageDTOs = new HashMap<>(
+        );
     }
 
     public String getFlowID() {

@@ -37,7 +37,6 @@ public class FlowConvertor {
 
     private static final Log LOG = LogFactory.getLog(FlowConvertor.class);
 
-
     public static void createRegistrationFlow() {
 
 //        RegistrationDTO registrationDTO = adapt();
@@ -122,16 +121,16 @@ public class FlowConvertor {
                     boolean firstExecutorInArray = true;
                     NodeDTO prevNode = null;
                     for (JsonNode executor : executorsArray) {
-                        String executorID = executor.get("id").asText();
+//                        String executorID = executor.get("id").asText();
                         String executorName = executor.get("name").asText();
                         if (firstExecutorInArray) {
-                            nodeDTO = createExecutorNode(actionId, nextNodeId, executorID, executorName);
+                            nodeDTO = createExecutorNode(actionId, nextNodeId, executorName);
                             nextActionNodeDTOS.add(nodeDTO);
                             firstExecutorInArray = false;
                             prevNode = nodeDTO;
                         } else {
                             String nextExecutorId = UUID.randomUUID().toString();
-                            nodeDTO = createExecutorNode(nextExecutorId, nextNodeId, executorID, executorName);
+                            nodeDTO = createExecutorNode(nextExecutorId, nextNodeId, executorName);
                             prevNode.getNextNodes().remove(nextNodeId);
                             prevNode.addNextNode(nextExecutorId);
                             sequence.addNode(nodeDTO);
@@ -217,13 +216,12 @@ public class FlowConvertor {
         return new NodeDTO(id, "USER_ONBOARDING");
     }
 
-    private static NodeDTO createExecutorNode(String id, String nextNodeId, String executorID, String exName) {
+    private static NodeDTO createExecutorNode(String id, String nextNodeId, String executorID) {
 
         System.out.println("Info: Create Executor Node for " + id);
         NodeDTO node = new NodeDTO(id, "EXECUTOR");
         node.addNextNode(nextNodeId);
         node.addProperty("EXECUTOR_ID", executorID);
-        node.addProperty("EXECUTOR_NAME", exName);
         return node;
     }
 }

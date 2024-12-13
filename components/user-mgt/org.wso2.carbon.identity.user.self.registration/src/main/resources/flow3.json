@@ -34,12 +34,11 @@
             ],
             "actions": [
                 {
-                    "id": "flow-action-password-ty203491",
+                    "id": "flow-action-password-onboarder-p563u9Yn",
                     "action": {
                         "type": "EXECUTOR",
                         "executors": [
                             {
-                                "id": "flow-action-password-onboarder-p563u9Yn",
                                 "name": "PasswordOnboarder"
                             }
                         ]
@@ -49,12 +48,11 @@
                     ]
                 },
                 {
-                    "id": "flow-action-email-394ksdj3",
+                    "id": "flow-action-email-otp-verifier-5t8uJ6D3",
                     "action": {
                         "type": "EXECUTOR",
                         "executors": [
                             {
-                                "id": "flow-action-email-otp-verifier-5t8uJ6D3",
                                 "name": "EmailOTPVerifier"
                             }
                         ]
@@ -64,12 +62,11 @@
                     ]
                 },
                 {
-                    "id": "flow-action-google-WeP34234",
+                    "id": "flow-action-google-sign-up-Rt8uJ6D3",
                     "action": {
                         "type": "EXECUTOR",
                         "executors": [
                             {
-                                "id": "flow-action-google-sign-up-Rt8uJ6D3",
                                 "name": "GoogleSignUp"
                             }
                         ]
