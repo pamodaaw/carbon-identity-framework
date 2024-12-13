@@ -32,11 +32,17 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.NodeDTO;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.RegistrationDTO;
+import org.wso2.carbon.identity.user.self.registration.temp.ConfigDataHolder;
 
 public class FlowConvertor {
 
     private static JsonNode loadFlow(String flowId) throws IOException {
 
+        if ("newflow".equalsIgnoreCase(flowId)) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonString = ConfigDataHolder.getInstance().getOrchestrationConfig().get("carbon.super");
+            return objectMapper.readTree(jsonString);
+        }
         String fileName = flowId + ".json";
         InputStream inputStream = FlowConvertor.class.getClassLoader().getResourceAsStream(fileName);
         if (inputStream == null) {
