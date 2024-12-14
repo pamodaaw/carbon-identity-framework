@@ -12,11 +12,18 @@ import org.wso2.carbon.identity.user.self.registration.mgt.dto.ActionDTO;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.BlockDTO;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.ElementDTO;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.PageDTO;
+import org.wso2.carbon.identity.user.self.registration.temp.ConfigDataHolder;
+import org.wso2.carbon.identity.user.self.registration.util.Constants;
 
 public class FlowToPageConvertor {
 
     private static JsonNode loadFlow(String flowId) throws IOException {
 
+        if (Constants.NEW_FLOW.equalsIgnoreCase(flowId)) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String jsonString = ConfigDataHolder.getInstance().getOrchestrationConfig().get("carbon.super");
+            return objectMapper.readTree(jsonString);
+        }
         String fileName = flowId + ".json";
         InputStream inputStream = FlowConvertor.class.getClassLoader().getResourceAsStream(fileName);
         if (inputStream == null) {

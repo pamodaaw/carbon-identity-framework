@@ -38,6 +38,7 @@ public class Constants {
     public static final String STATUS_EXTERNAL_REDIRECTION = "EXTERNAL_REDIRECTION";
     public static final String STATUS_PROMPT_ONLY = "PROMPT_ONLY";
     public static final String STATUS_USER_CREATED = "USER_CREATED";
+    public static final String NEW_FLOW = "newflow"; // temp constant to engage new flow.
 
     public static final String PASSWORD = "PASSWORD";
 

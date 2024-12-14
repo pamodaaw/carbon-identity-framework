@@ -11,9 +11,15 @@ http_method="POST"
 
 #### Config API
 https://localhost:9443/reg-orchestration/config
+Use the json payload in https://github.com/brionmario/iam-product-registration-orchestration/blob/main/schemas/composer/payload.json as it is.
 
 #### Portal API
-https://localhost:9443/reg-orchestration/portal
+initiate: https://localhost:9443/reg-orchestration/portal/initiate
+No json payload required for initiate API
+
+continue: https://localhost:9443/reg-orchestration/portal/continue
+use the json payload in current portal as it is. https://github.com/brionmario/iam-product-registration-orchestration/tree/main/schemas/portal
+
 
 #### Testing the config through /registration/initiate api
 
