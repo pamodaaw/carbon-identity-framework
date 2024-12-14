@@ -34,7 +34,7 @@ public class NodeResponse {
     private Map<String, String> additionalInfo = new HashMap<>();
     private String userAssertion;
     private Message message;
-    private PageDTO pageDTO;
+    private PageDTO pageDTO;//flowid, status, type=registiration
 
     public NodeResponse(String status) {
 
