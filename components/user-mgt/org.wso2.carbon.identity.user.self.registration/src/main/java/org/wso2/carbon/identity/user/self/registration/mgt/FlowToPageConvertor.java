@@ -19,16 +19,6 @@ public class FlowToPageConvertor {
 
     private static JsonNode loadFlow(String flowId) throws IOException {
 
-        String fileName = flowId + ".json";
-        InputStream inputStream = FlowConvertor.class.getClassLoader().getResourceAsStream(fileName);
-        if (inputStream == null) {
-            throw new IllegalArgumentException("File not found: " + fileName);
-        }
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readTree(inputStream);
-    }
-    private static JsonNode loadFlow(String flowId) throws IOException {
-
         if (Constants.NEW_FLOW.equalsIgnoreCase(flowId)) {
             ObjectMapper objectMapper = new ObjectMapper();
             String jsonString = ConfigDataHolder.getInstance().getOrchestrationConfig().get("carbon.super");
@@ -42,7 +32,6 @@ public class FlowToPageConvertor {
         ObjectMapper objectMapper = new ObjectMapper();
         return objectMapper.readTree(inputStream);
     }
-
 
     public static Map<String, PageDTO> convert(String flowId) throws IOException {
 
