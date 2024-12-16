@@ -22,6 +22,10 @@ public class FlowToPageConvertor {
         if (Constants.NEW_FLOW.equalsIgnoreCase(flowId)) {
             ObjectMapper objectMapper = new ObjectMapper();
             String jsonString = ConfigDataHolder.getInstance().getOrchestrationConfig().get("carbon.super");
+            if (jsonString == null) {
+                throw new IllegalArgumentException("Flow not found: " + flowId + " for tenant: carbon.super make sure " +
+                        "the flow is added through the /reg-orchestration/config API");
+            }
             return objectMapper.readTree(jsonString);
         }
         String fileName = flowId + ".json";
