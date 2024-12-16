@@ -48,12 +48,17 @@ public class RegistrationPortalServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException,
             IOException {
 
-        // get request uri
-        String uri = request.getRequestURI();
-        if (uri.contains("/initiate")) {
-            initiateFlow(request, response);
-        } else {
-            continueFlow(request, response);
+        try {
+            // get request uri
+            String uri = request.getRequestURI();
+            if (uri.contains("/initiate")) {
+                initiateFlow(request, response);
+            } else {
+                continueFlow(request, response);
+            }
+        } catch (Throwable e) {
+            log("Error while processing the request.", e);
+            buildStandardErrorResponse(response);
         }
     }
 
@@ -62,7 +67,7 @@ public class RegistrationPortalServlet extends HttpServlet {
         try {
             ExecutionState state = UserRegistrationFlowService.getInstance().initiateFlow(Constants.NEW_FLOW);
             buildResponse(response, state);
-        } catch (RegistrationFrameworkException e) {
+        } catch (Throwable e) {
             log("Error while initiating the registration flow", e);
             buildStandardErrorResponse(response);
         }
@@ -92,7 +97,7 @@ public class RegistrationPortalServlet extends HttpServlet {
         try {
             ExecutionState state = UserRegistrationFlowService.getInstance().continueFlow(flowId, inputData);
             buildResponse(response, state);
-        } catch (RegistrationFrameworkException e) {
+        } catch (Throwable e) {
             log("Error while continuing the registration flow", e);
             buildStandardErrorResponse(response);
         }

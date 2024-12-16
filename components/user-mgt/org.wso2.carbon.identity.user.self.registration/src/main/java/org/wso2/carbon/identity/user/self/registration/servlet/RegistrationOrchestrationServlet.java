@@ -18,9 +18,11 @@
 
 package org.wso2.carbon.identity.user.self.registration.servlet;
 
+import com.google.gson.Gson;
 import org.wso2.carbon.identity.user.self.registration.temp.ConfigDataHolder;
 
 import java.io.IOException;
+import java.util.LinkedHashMap;
 import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
@@ -40,12 +42,30 @@ public class RegistrationOrchestrationServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException,
             IOException {
 
-        // get json data from request
-        String configData = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
-        ConfigDataHolder.getInstance().getOrchestrationConfig().put(superTenantDomain, configData);
+        try {
+            // get json data from request
+            String configData = request.getReader().lines().collect(Collectors.joining(System.lineSeparator()));
+            ConfigDataHolder.getInstance().getOrchestrationConfig().put(superTenantDomain, configData);
+
+            response.setContentType("application/json");
+            response.getWriter().write("{\"org\":\"" + superTenantDomain + "\", \"config\":" + configData + "}");
+            response.setStatus(HttpServletResponse.SC_OK);
+        } catch (Throwable e) {
+            log("Error while continuing the registration flow", e);
+            buildStandardErrorResponse(response);
+        }
+    }
+
+    private void buildStandardErrorResponse(HttpServletResponse response) throws IOException {
+
+        LinkedHashMap<String, Object> data = new LinkedHashMap<>();
+        data.put("error", "Error occurred while processing the request. Check terminal for logs.");
+
+        Gson gson = new Gson();
+        String jsonString = gson.toJson(data);
 
         response.setContentType("application/json");
-        response.getWriter().write("{\"org\":\"" + superTenantDomain + "\", \"config\":" + configData + "}");
-        response.setStatus(HttpServletResponse.SC_OK);
+        response.getWriter().write(jsonString);
+        response.setStatus(HttpServletResponse.SC_BAD_REQUEST);
     }
 }
