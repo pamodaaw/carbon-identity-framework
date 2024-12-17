@@ -32,6 +32,7 @@ import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
 import org.wso2.carbon.identity.user.self.registration.model.InitData;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
+import org.wso2.carbon.identity.user.self.registration.util.Constants;
 
 public class GoogleSignupTest implements Authentication, AttributeCollection {
 
@@ -39,7 +40,7 @@ public class GoogleSignupTest implements Authentication, AttributeCollection {
 
     public String getName() {
 
-        return "GoogleOIDCAuthenticator";
+        return Constants.GOOGLE_EXECUTOR_NAME;
     }
 
     @Override

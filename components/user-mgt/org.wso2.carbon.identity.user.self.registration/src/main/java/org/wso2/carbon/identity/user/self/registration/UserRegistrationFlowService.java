@@ -96,9 +96,9 @@ public class UserRegistrationFlowService {
 
         RegistrationContext context = RegistrationFrameworkUtils.retrieveRegContextFromCache(flowId);
         RegSequence sequence = context.getRegSequence();
-        if (!validateInputs(inputs.getUserInput(), context)) {
-            throw new RegistrationFrameworkException("Invalid inputs provided.");
-        }
+//        if (!validateInputs(inputs.getUserInput(), context)) {
+//            throw new RegistrationFrameworkException("Invalid inputs provided.");
+//        }
         context.updateRequiredDataWithInputs(inputs.getUserInput());
         NodeResponse response = sequence.execute(context);
         ExecutionState state = new ExecutionState(flowId, response);

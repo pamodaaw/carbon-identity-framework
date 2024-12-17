@@ -42,6 +42,9 @@ public class Constants {
 
     public static final String PASSWORD = "PASSWORD";
 
+    public static final String PWD_EXECUTOR_NAME = "PasswordOnboarder";
+    public static final String EMAIL_OTP_EXECUTOR_NAME = "EmailOTPVerifier";
+    public static final String GOOGLE_EXECUTOR_NAME = "GoogleOIDCAuthenticator";
     public enum DataType {
         STRING,
         BOOLEAN,

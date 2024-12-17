@@ -23,6 +23,7 @@ import java.util.Map;
 import java.util.Optional;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
+import org.wso2.carbon.identity.user.self.registration.exception.RegistrationClientException;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationServerException;
 import org.wso2.carbon.identity.user.self.registration.internal.UserRegistrationServiceDataHolder;
@@ -76,6 +77,13 @@ public class UserOnboardNode extends AbstractNode {
         for (Map.Entry<String, Object> entry : claims.entrySet()) {
             userClaims.put(entry.getKey(), entry.getValue().toString());
         }
+
+        String username = Optional.ofNullable(user.getUsername())
+                .orElseGet(() -> userClaims.get("http://wso2.org/claims/username"));
+        if (username == null) {
+            throw new RegistrationClientException("Username is not provided.");
+        }
+        user.setUsername(username);
 
         // TODO:  Identify the userdomain properly.
         try {

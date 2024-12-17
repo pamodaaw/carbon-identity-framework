@@ -35,6 +35,7 @@ import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
 import org.wso2.carbon.identity.user.self.registration.model.InitData;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
+import org.wso2.carbon.identity.user.self.registration.util.Constants;
 
 public class EmailOTPExecutorTest implements Authentication, AttributeCollection, Verification {
 
@@ -44,7 +45,7 @@ public class EmailOTPExecutorTest implements Authentication, AttributeCollection
 
     public String getName() {
 
-        return "EmailOTPVerifier";
+        return Constants.EMAIL_OTP_EXECUTOR_NAME;
     }
 
     public String getAuthMechanism() {

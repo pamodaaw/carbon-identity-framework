@@ -29,6 +29,7 @@ import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
 import org.wso2.carbon.identity.user.self.registration.model.InitData;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
+import org.wso2.carbon.identity.user.self.registration.util.Constants;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.PASSWORD;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ACTION_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
@@ -41,7 +42,7 @@ public class PasswordOnboarderTest implements Authentication, AttributeCollectio
 
     public String getName() {
 
-        return "PasswordOnboard";
+        return Constants.PWD_EXECUTOR_NAME;
     }
 
     @Override

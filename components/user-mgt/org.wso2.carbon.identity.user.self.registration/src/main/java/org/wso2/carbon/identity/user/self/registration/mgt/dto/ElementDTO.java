@@ -10,7 +10,7 @@ public class ElementDTO {
     private String type;
     private String variant;
     private Map<String, Object> properties;
-    private ActionDTO actionDTO;
+    private ActionDTO action;
 
     public ElementDTO(String id, String category, String type, String variant) {
 
@@ -71,13 +71,13 @@ public class ElementDTO {
         this.properties.put(key, value);
     }
 
-    public ActionDTO getActionDTO() {
+    public ActionDTO getAction() {
 
-        return actionDTO;
+        return action;
     }
 
-    public void setActionDTO(ActionDTO actionDTO) {
+    public void setAction(ActionDTO action) {
 
-        this.actionDTO = actionDTO;
+        this.action = action;
     }
 }

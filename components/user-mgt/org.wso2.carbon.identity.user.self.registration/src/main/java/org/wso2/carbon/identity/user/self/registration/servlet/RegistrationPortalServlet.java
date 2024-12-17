@@ -106,17 +106,29 @@ public class RegistrationPortalServlet extends HttpServlet {
     private void buildResponse(HttpServletResponse response, ExecutionState state) throws IOException {
 
         LinkedHashMap<String, Object> data = new LinkedHashMap<>();
-        data.put("flowId", state.getFlowId());
-        data.put("status", state.getResponse().getStatus());
-        data.put("type", "registration");
-        data.put("page", state.getResponse().getPage());
-
         Gson gson = new Gson();
-        String jsonString = gson.toJson(data);
 
-        response.setContentType("application/json");
-        response.getWriter().write(jsonString);
-        response.setStatus(HttpServletResponse.SC_OK);
+        data.put("flowId", state.getFlowId());
+        if ("COMPLETE".equals(state.getResponse().getStatus())){
+            data.put("status", "COMPLETE");
+            data.put("userAssertion", state.getResponse().getUserAssertion());
+            String jsonString = gson.toJson(data);
+
+            response.setContentType("application/json");
+            response.getWriter().write(jsonString);
+            response.setStatus(HttpServletResponse.SC_CREATED);
+        } else {
+            data.put("status", state.getResponse().getStatus());
+            data.put("type", "registration");
+            data.put("elements", state.getResponse().getPage().getElements());
+            data.put("blocks", state.getResponse().getPage().getBlocks());
+
+            String jsonString = gson.toJson(data);
+
+            response.setContentType("application/json");
+            response.getWriter().write(jsonString);
+            response.setStatus(HttpServletResponse.SC_OK);
+        }
     }
 
     private void buildStandardErrorResponse(HttpServletResponse response) throws IOException {

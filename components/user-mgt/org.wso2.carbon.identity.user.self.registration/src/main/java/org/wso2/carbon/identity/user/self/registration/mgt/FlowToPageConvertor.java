@@ -156,7 +156,7 @@ public class FlowToPageConvertor {
             if ("NEXT".equals(actionType)) {
                 ActionDTO actionDTO = new ActionDTO(actionType);
                 if (elementDTOMap != null && elementDTOMap.containsKey(actionId)) {
-                    elementDTOMap.get(actionId).setActionDTO(actionDTO);
+                    elementDTOMap.get(actionId).setAction(actionDTO);
                 }
             } else if ("EXECUTOR".equals(actionType)){
                 String exName = null;
@@ -169,7 +169,7 @@ public class FlowToPageConvertor {
                 }
                 ActionDTO actionDTO = new ActionDTO(actionType, exName);
                 if (elementDTOMap != null && elementDTOMap.containsKey(actionId)) {
-                    elementDTOMap.get(actionId).setActionDTO(actionDTO);
+                    elementDTOMap.get(actionId).setAction(actionDTO);
                 }
             }
         }

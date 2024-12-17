@@ -45,6 +45,7 @@ import org.wso2.carbon.identity.user.self.registration.mgt.FlowConvertor;
 import org.wso2.carbon.identity.user.self.registration.mgt.FlowToPageConvertor;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.NodeDTO;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.RegistrationDTO;
+import org.wso2.carbon.identity.user.self.registration.util.Constants;
 import org.wso2.carbon.identity.user.self.registration.util.RegistrationFrameworkUtils;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.model.RegSequence;
@@ -470,11 +471,11 @@ public class AuthBasedSequenceLoader {
                                                                   nodeDTO.getId());
                 }
                 Executor mappedRegExecutor = null;
-                if (executorId.equals("EmailOTPVerifier")) {
+                if (executorId.equals(Constants.EMAIL_OTP_EXECUTOR_NAME)) {
                     mappedRegExecutor = new EmailOTPExecutorTest();
-                } else if (executorId.equals("PasswordOnboarder")) {
+                } else if (executorId.equals(Constants.PWD_EXECUTOR_NAME)) {
                     mappedRegExecutor = new PasswordOnboarderTest();
-                } else if (executorId.equals("GoogleSignUp")) {
+                } else if (executorId.equals(Constants.GOOGLE_EXECUTOR_NAME)) {
                     mappedRegExecutor = new GoogleSignupTest();
                 } else {
                     throw new RegistrationServerException("Unsupported executor ID: " + executorId);

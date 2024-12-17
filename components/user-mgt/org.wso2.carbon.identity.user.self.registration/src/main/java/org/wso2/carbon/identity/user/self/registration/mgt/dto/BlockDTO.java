@@ -6,7 +6,7 @@ import java.util.List;
 public class BlockDTO {
 
     private String id;
-    private final List<String> elementIds = new ArrayList<>();
+    private final List<String> nodes = new ArrayList<>();
 
     public String getId() {
 
@@ -20,11 +20,11 @@ public class BlockDTO {
 
     public List<String> getElementIds() {
 
-        return elementIds;
+        return nodes;
     }
 
     public void addElementId(String elementId) {
 
-        this.elementIds.add(elementId);
+        this.nodes.add(elementId);
     }
 }

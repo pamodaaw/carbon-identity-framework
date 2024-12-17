@@ -100,6 +100,7 @@ public class FlowConvertor {
                             String nextNodeIdValue = next.asText();
                             if ("COMPLETE".equals(nextNodeIdValue)) {
                                 NodeDTO finalNode = createUserOnboardingNode();
+                                sequence.addNode(finalNode);
                                 nextNodeId = finalNode.getId();
                             } else {
                                 nextNodeId = nextNodeIdValue;
