@@ -1,18 +1,17 @@
 package org.wso2.carbon.identity.user.self.registration.mgt.dto;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class ActionDTO {
 
     private String type;
-    private String name;
+    private List<ExecutorDTO> executors = new ArrayList<>();
 
     public ActionDTO(String type) {
         this.type = type;
     }
 
-    public ActionDTO(String type, String name) {
-        this.type = type;
-        this.name = name;
-    }
 
     public String getType() {
 
@@ -24,13 +23,14 @@ public class ActionDTO {
         this.type = type;
     }
 
-    public String getName() {
+    public List<ExecutorDTO> getExecutors() {
 
-        return name;
+        return executors;
     }
 
-    public void setName(String name) {
+    public void addExecutor(ExecutorDTO executorDTO) {
 
-        this.name = name;
+        this.executors.add(executorDTO);
     }
 }
+

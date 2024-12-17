@@ -19,13 +19,19 @@
 package org.wso2.carbon.identity.user.self.registration.temp;
 
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ACTION_COMPLETE;
-import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_EXTERNAL_REDIRECTION;
-import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NEXT_ACTION_PENDING;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.json.JSONObject;
 import org.wso2.carbon.identity.user.self.registration.action.AttributeCollection;
 import org.wso2.carbon.identity.user.self.registration.action.Authentication;
 import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
@@ -36,7 +42,8 @@ import org.wso2.carbon.identity.user.self.registration.util.Constants;
 
 public class GoogleSignupTest implements Authentication, AttributeCollection {
 
-    private static final String ID_TOKEN = "google_id_token";
+    private static final String GOOGLE_CODE = "code";
+    private static final Log LOG = LogFactory.getLog(GoogleSignupTest.class);
 
     public String getName() {
 
@@ -57,16 +64,18 @@ public class GoogleSignupTest implements Authentication, AttributeCollection {
 
         // Implement the actual task logic here
 //        if (STATUS_ATTR_REQUIRED.equals(context.getExecutorStatus())) {
-            if ( userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(ID_TOKEN)) {
-                response.setResult(STATUS_ACTION_COMPLETE);
-                Map<String, Object> updatedClaims = new HashMap<>();
-                updatedClaims.put("claimURI", userInputs.get(ID_TOKEN));
+        if (userInputs != null && !userInputs.isEmpty() && userInputs.containsKey(GOOGLE_CODE)) {
+            response.setResult(STATUS_ACTION_COMPLETE);
+            Map<String, Object> updatedClaims = new HashMap<>();
+            updatedClaims = doTokenCall(userInputs.get(GOOGLE_CODE));
+            if (updatedClaims != null) {
                 response.setUpdatedUserClaims(updatedClaims);
-                return response;
-            } else {
+            }
+            return response;
+        } else {
 //        }
 //        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
-            response.setResult(STATUS_ATTR_REQUIRED);
+            response.setResult(STATUS_EXTERNAL_REDIRECTION);
             response.setRequiredData(getIdTokenRequirement());
             response.setAdditionalInfo(getConfigurations());
             return response;
@@ -101,8 +110,7 @@ public class GoogleSignupTest implements Authentication, AttributeCollection {
 
         // Define a new list of InputMetaData and add the data object and return the list.
         List<InputMetaData> inputMetaData = new ArrayList<>();
-        String attributeId = "google_id_token";
-        InputMetaData e1 = new InputMetaData(attributeId, "google_id_token", "attribute", 1);
+        InputMetaData e1 = new InputMetaData(GOOGLE_CODE, GOOGLE_CODE, "attribute", 1);
         e1.setMandatory(true);
         e1.setValidationRegex("*");
         inputMetaData.add(e1);
@@ -113,8 +121,81 @@ public class GoogleSignupTest implements Authentication, AttributeCollection {
 
         Map<String, String> googleProperties = new HashMap<>();
         googleProperties.put("redirectUrl", "https://accounts.google.com/o/oauth2/auth?response_type=code" +
-                "&redirect_uri=https%3A%2F%2Fexample-app.com%2Fredirect&state=e12f-ed27-49e5-ad0a-8bbb5671d81e%2COIDC" +
-                "&client_id=231644702133-ds23592jt.apps.googleusercontent.com&scope=openid");
+                "&redirect_uri=https://localhost:9443/authenticationendpoint/self-registration.jsp" +
+                "&state=e12f-ed27-49e5-ad0a-8bbb5671d81e" +
+                "&client_id=795976161388-gptgu7h9o0o4cm96vai70cfm81chiu0r.apps.googleusercontent.com" +
+                "&scope=openid+email+profile");
+        googleProperties.put("state", "e12f-ed27-49e5-ad0a-8bbb5671d81e");
         return googleProperties;
+    }
+
+
+    private Map<String, Object> doTokenCall(String authorizationCode) {
+
+        String tokenUrl = "https://oauth2.googleapis.com/token";
+        String clientId = "";
+        String clientSecret = "";
+        String redirectUri =
+                "https://localhost:9443/authenticationendpoint/self-registration.jsp"; // Must match the one used in
+        // OAuth
+
+        try {
+            // Prepare the request body
+            String requestBody = "code=" + authorizationCode
+                    + "&client_id=" + clientId
+                    + "&client_secret=" + clientSecret
+                    + "&redirect_uri=" + redirectUri
+                    + "&grant_type=authorization_code";
+
+            // Open connection to Google's token endpoint
+            URL url = new URL(tokenUrl);
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/x-www-form-urlencoded");
+            conn.setDoOutput(true);
+
+            try (OutputStream os = conn.getOutputStream()) {
+                byte[] input = requestBody.getBytes(StandardCharsets.UTF_8);
+                os.write(input, 0, input.length);
+            }
+
+            // Read the response
+            int responseCode = conn.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_OK) {
+                String response = new String(conn.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+                JSONObject jsonResponse = new JSONObject(response);
+                if (jsonResponse.has("id_token")) {
+                    String idToken = jsonResponse.getString("id_token");
+
+                    // Decode the ID Token
+                    String[] tokenParts = idToken.split("\\.");
+                    if (tokenParts.length == 3) {
+                        String payload =
+                                new String(Base64.getUrlDecoder().decode(tokenParts[1]), StandardCharsets.UTF_8);
+
+                        // Extract email, given_name, and family_name
+                        JSONObject payloadJson = new JSONObject(payload);
+                        String email = payloadJson.optString("email", "Not found");
+                        String givenName = payloadJson.optString("given_name", "Not found");
+                        String familyName = payloadJson.optString("family_name", "Not found");
+
+                        Map<String, Object> claimSet = new HashMap<>();
+                        claimSet.put("http://wso2.org/claims/username", email);
+                        claimSet.put("http://wso2.org/claims/givenname", givenName);
+                        claimSet.put("http://wso2.org/claims/lastname", familyName);
+                        return claimSet;
+                    } else {
+                        LOG.error("Invalid ID Token format");
+                    }
+                }
+            } else {
+                LOG.error("Failed to get token from Google. Response code: " + responseCode);
+            }
+
+            conn.disconnect();
+        } catch (Exception e) {
+            return null;
+        }
+        return null;
     }
 }

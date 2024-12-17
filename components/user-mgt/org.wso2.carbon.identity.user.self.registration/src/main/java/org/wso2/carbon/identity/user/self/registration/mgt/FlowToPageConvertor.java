@@ -1,5 +1,6 @@
 package org.wso2.carbon.identity.user.self.registration.mgt;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -7,10 +8,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.ActionDTO;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.BlockDTO;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.ElementDTO;
+import org.wso2.carbon.identity.user.self.registration.mgt.dto.ExecutorDTO;
+import org.wso2.carbon.identity.user.self.registration.mgt.dto.MetaDTO;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.PageDTO;
 import org.wso2.carbon.identity.user.self.registration.temp.ConfigDataHolder;
 import org.wso2.carbon.identity.user.self.registration.util.Constants;
@@ -84,7 +88,7 @@ public class FlowToPageConvertor {
         return pageDTOMap;
     }
 
-    private static Map<String, ElementDTO> processElements(JsonNode rootNode) {
+    private static Map<String, ElementDTO> processElements(JsonNode rootNode) throws JsonProcessingException {
 
         // Retrieve all the elements in the flow.
         JsonNode elementsArray = rootNode.get("elements");
@@ -110,7 +114,27 @@ public class FlowToPageConvertor {
                 Iterator<Map.Entry<String, JsonNode>> fields = fieldObj.fields();
                 while (fields.hasNext()) {
                     Map.Entry<String, JsonNode> field = fields.next();
-                    elementDTO.addProperty(field.getKey(), field.getValue().asText());
+                    Object value;
+                    if (field.getValue().isBoolean()) {
+                        value = field.getValue().asBoolean();
+                    } else if (field.getValue().isInt()) {
+                        value = field.getValue().asInt();
+                    } else if (field.getValue().isObject()) {
+                        String json = field.getValue().toString();
+
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode jsonNode = mapper.readTree(json);
+                        value = mapper.convertValue(jsonNode, Object.class);
+                    } else if (field.getValue().isArray()) {
+                        String jsonArray = field.getValue().toString();
+                        ObjectMapper mapper = new ObjectMapper();
+                        JsonNode jsonNode = mapper.readTree(jsonArray);
+                        // Convert JsonNode Array to List of Objects
+                        value = mapper.convertValue(jsonNode, List.class);
+                    } else {
+                        value = field.getValue().asText();
+                    }
+                    elementDTO.addProperty(field.getKey(), value);
                 }
             }
             elementDTOMap.put(elementId, elementDTO);
@@ -134,7 +158,7 @@ public class FlowToPageConvertor {
             BlockDTO blockDTO = new BlockDTO();
             blockDTO.setId(blockId);
 
-            JsonNode blockElements = block.get("nodes");
+            JsonNode blockElements = block.get("elements");
             for (JsonNode blockElement : blockElements) {
                 blockDTO.addElementId(blockElement.asText());
             }
@@ -163,11 +187,18 @@ public class FlowToPageConvertor {
                 JsonNode executorsNode = action.path("action").path("executors");
 
                 // Retrieve the name of the first executor
+                ActionDTO actionDTO = new ActionDTO(actionType);
                 if (executorsNode.isArray() && !executorsNode.isEmpty()) {
                     JsonNode firstExecutor = executorsNode.get(0);
+                    MetaDTO metaDTO = null;
+                    if (firstExecutor.get("meta") != null) {
+                        JsonNode exMeta = firstExecutor.get("meta");
+                        metaDTO =new MetaDTO(exMeta.get("idp").asText());
+                    }
                     exName = firstExecutor.path("name").asText();
+                    ExecutorDTO executorDTO = new ExecutorDTO(exName, metaDTO);
+                    actionDTO.addExecutor(executorDTO);
                 }
-                ActionDTO actionDTO = new ActionDTO(actionType, exName);
                 if (elementDTOMap != null && elementDTOMap.containsKey(actionId)) {
                     elementDTOMap.get(actionId).setAction(actionDTO);
                 }

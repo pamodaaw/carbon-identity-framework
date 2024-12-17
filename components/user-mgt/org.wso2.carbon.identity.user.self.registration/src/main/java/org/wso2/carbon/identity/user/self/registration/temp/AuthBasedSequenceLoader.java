@@ -461,7 +461,7 @@ public class AuthBasedSequenceLoader {
             Node node;
 
             if ("EXECUTOR".equals(nodeDTO.getType())) {
-                String executorId = nodeDTO.getProperties().get("EXECUTOR_ID");
+                String executorId = nodeDTO.getProperties().get("EXECUTOR_NAME");
                 if (executorId == null) {
                     throw new RegistrationServerException(
                             "Executor ID is not defined for the node: " + nodeDTO.getId());

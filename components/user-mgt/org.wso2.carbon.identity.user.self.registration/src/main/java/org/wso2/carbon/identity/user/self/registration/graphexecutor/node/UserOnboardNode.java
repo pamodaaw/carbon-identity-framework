@@ -18,6 +18,8 @@
 
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
+import java.net.HttpURLConnection;
+import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -60,6 +62,7 @@ public class UserOnboardNode extends AbstractNode {
     public NodeResponse execute(RegistrationContext context) throws RegistrationFrameworkException {
 
         String tenantDomain = context.getTenantDomain();
+        updateUserProfile(context);
         RegistrationRequestedUser user = context.getRegisteringUser();
         UserStoreManager userStoreManager = getUserstoreManager(tenantDomain);
 
@@ -91,7 +94,8 @@ public class UserOnboardNode extends AbstractNode {
                     .addUser(IdentityUtil.addDomainToName(user.getUsername(), "PRIMARY"), password, null, userClaims,
                              null);
             String userid = ((AbstractUserStoreManager) userStoreManager).getUserIDFromUserName(user.getUsername());
-            Optional<String> userAssertion = RegistrationFrameworkUtils.getSignedUserAssertion(userid, context);
+//            Optional<String> userAssertion = RegistrationFrameworkUtils.getSignedUserAssertion(userid, context);
+            Optional<String> userAssertion = Optional.ofNullable(userid);
             context.setUserId(userid);
             userAssertion.ifPresent(context::setUserAssertion);
             return new NodeResponse(STATUS_USER_CREATED);
@@ -115,5 +119,16 @@ public class UserOnboardNode extends AbstractNode {
                                                   String.format(ERROR_LOADING_USERSTORE_MANAGER.getDescription(),
                                                                 tenantDomain));
         }
+    }
+
+    private void updateUserProfile(RegistrationContext context) {
+
+        context.getUserInputData().forEach((key, value) -> {
+            if (key.startsWith("http://wso2.org/claims/") && !key.equals("http://wso2.org/claims/username") ) {
+                if (!context.getRegisteringUser().getClaims().containsKey(key)) {
+                    context.getRegisteringUser().addClaim(key, value);
+                }
+            }
+        });
     }
 }

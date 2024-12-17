@@ -77,7 +77,6 @@ public class FlowConvertor {
             List<NodeDTO> nextActionNodeDTOS = new ArrayList<>();
 
             if (actionButtons == null) {
-                System.out.println("Info: Actions null for " + jnodeId);
                 continue;
             }
 
@@ -88,7 +87,6 @@ public class FlowConvertor {
                 JsonNode action = actionButton.get("action");
 
                 if (action == null) {
-                    System.out.println("Info2: Actions null for " + jnodeId);
                     continue;
                 }
 
@@ -110,7 +108,6 @@ public class FlowConvertor {
                     }
                 }
                 if (action.get("type") == null) {
-                    System.out.println("Info: ActionDetails type null for " + actionId);
                     continue;
                 }
                 String actionType = action.get("type").asText();
@@ -121,16 +118,20 @@ public class FlowConvertor {
                     boolean firstExecutorInArray = true;
                     NodeDTO prevNode = null;
                     for (JsonNode executor : executorsArray) {
-//                        String executorID = executor.get("id").asText();
                         String executorName = executor.get("name").asText();
+                        String instanceID = null;
+                        JsonNode exMeta = executor.get("meta");
+                        if (exMeta != null && exMeta.has("idp")) {
+                            instanceID = exMeta.get("idp").asText();
+                        }
                         if (firstExecutorInArray) {
-                            nodeDTO = createExecutorNode(actionId, nextNodeId, executorName);
+                            nodeDTO = createExecutorNode(actionId, nextNodeId, executorName, instanceID);
                             nextActionNodeDTOS.add(nodeDTO);
                             firstExecutorInArray = false;
                             prevNode = nodeDTO;
                         } else {
                             String nextExecutorId = UUID.randomUUID().toString();
-                            nodeDTO = createExecutorNode(nextExecutorId, nextNodeId, executorName);
+                            nodeDTO = createExecutorNode(nextExecutorId, nextNodeId, executorName, instanceID);
                             prevNode.getNextNodes().remove(nextNodeId);
                             prevNode.addNextNode(nextExecutorId);
                             sequence.addNode(nodeDTO);
@@ -146,8 +147,6 @@ public class FlowConvertor {
 
                         for (NodeDTO node : sequence.getNodes().values()) {
                             if (node.getNextNodes().contains(jnodeId)) {
-                                System.out.println(
-                                        "NEXT action found. Found node " + node.getId() + " with next node " + jnodeId);
                                 node.getNextNodes().remove(jnodeId);
                                 node.addNextNode(nextNodeId);
                                 node.addPageIds(pageActionType, jnodeId);
@@ -170,7 +169,6 @@ public class FlowConvertor {
                 nextActionNodeDTOS.forEach(sequence::addNode);
                 for (NodeDTO node : sequence.getNodes().values()) {
                     if (node.getNextNodes().contains(jnodeId)) {
-                        System.out.println("Info: Found node " + node.getId() + " with next node " + jnodeId);
                         node.getNextNodes().remove(jnodeId);
                         node.addNextNode(decisionNodeDTO.getId());
                     }
@@ -184,7 +182,6 @@ public class FlowConvertor {
                 nextNodeDTO.addPageIds("INIT", jnodeId);
                 for (NodeDTO node : sequence.getNodes().values()) {
                     if (node.getNextNodes().contains(jnodeId)) {
-                        System.out.println("Info: Found node " + node.getId() + " with next node " + jnodeId);
                         node.getNextNodes().remove(jnodeId);
                         node.addNextNode(nextNodeDTO.getId());
                     }
@@ -216,12 +213,14 @@ public class FlowConvertor {
         return new NodeDTO(id, "USER_ONBOARDING");
     }
 
-    private static NodeDTO createExecutorNode(String id, String nextNodeId, String executorID) {
+    private static NodeDTO createExecutorNode(String id, String nextNodeId, String exName, String instanceID) {
 
-        System.out.println("Info: Create Executor Node for " + id);
         NodeDTO node = new NodeDTO(id, "EXECUTOR");
         node.addNextNode(nextNodeId);
-        node.addProperty("EXECUTOR_ID", executorID);
+        node.addProperty("EXECUTOR_NAME", exName);
+        if (instanceID != null) {
+            node.addProperty("EXECUTOR_ID", instanceID);
+        }
         return node;
     }
 }

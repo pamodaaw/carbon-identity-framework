@@ -28,6 +28,7 @@ import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.Node;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.PageDTO;
 import org.wso2.carbon.identity.user.self.registration.util.Constants;
 
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_EXTERNAL_REDIRECTION;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_FLOW_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NODE_COMPLETE;
@@ -171,6 +172,8 @@ public class RegSequence {
                 }
                 if (STATUS_EXTERNAL_REDIRECTION.equals(nodeResponse.getStatus())) {
                     nodeResponse.setStatus(STATUS_EXTERNAL_REDIRECTION);
+                    // TODO: Implement the external redirection sumbit logic.
+                    context.setExecutorStatus(STATUS_ATTR_REQUIRED);
                 } else {
                     nodeResponse.setPageDTO(getPageId(currentNode.getNodeId(), nodeResponse.getStatus()));
                     nodeResponse.setStatus(STATUS_USER_INPUT_REQUIRED);

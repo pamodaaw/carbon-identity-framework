@@ -19,11 +19,14 @@
 package org.wso2.carbon.identity.user.self.registration.servlet;
 
 import com.google.gson.Gson;
+import java.util.ArrayList;
+import java.util.List;
 import org.json.JSONObject;
 import org.wso2.carbon.identity.user.self.registration.UserRegistrationFlowService;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.model.ExecutionState;
 import org.wso2.carbon.identity.user.self.registration.model.InputData;
+import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.util.Constants;
 
 import java.io.IOException;
@@ -109,7 +112,7 @@ public class RegistrationPortalServlet extends HttpServlet {
         Gson gson = new Gson();
 
         data.put("flowId", state.getFlowId());
-        if ("COMPLETE".equals(state.getResponse().getStatus())){
+        if ("COMPLETE".equals(state.getResponse().getStatus())) {
             data.put("status", "COMPLETE");
             data.put("userAssertion", state.getResponse().getUserAssertion());
             String jsonString = gson.toJson(data);
@@ -117,6 +120,22 @@ public class RegistrationPortalServlet extends HttpServlet {
             response.setContentType("application/json");
             response.getWriter().write(jsonString);
             response.setStatus(HttpServletResponse.SC_CREATED);
+        } else if (Constants.STATUS_EXTERNAL_REDIRECTION.equals(state.getResponse().getStatus())) {
+            data.put("status", Constants.STATUS_EXTERNAL_REDIRECTION);
+            // Iterate the Map<String, String> returned from state.getResponse().getAdditionalProperties().
+            // Convert it to a Map<String, Object> and add it to the data map.
+            data.putAll(state.getResponse().getAdditionalInfo());
+
+            List<String> requiredData = new ArrayList<>();
+            for (InputMetaData inputMetaData : state.getResponse().getInputMetaDataList()) {
+                requiredData.add(inputMetaData.getName());
+            }
+            data.put("requiredData", requiredData);
+            String jsonString = gson.toJson(data);
+
+            response.setContentType("application/json");
+            response.getWriter().write(jsonString);
+            response.setStatus(HttpServletResponse.SC_OK);
         } else {
             data.put("status", state.getResponse().getStatus());
             data.put("type", "registration");

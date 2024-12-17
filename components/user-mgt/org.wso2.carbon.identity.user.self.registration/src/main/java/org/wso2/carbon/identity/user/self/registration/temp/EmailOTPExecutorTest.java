@@ -41,7 +41,7 @@ public class EmailOTPExecutorTest implements Authentication, AttributeCollection
 
     private final String EMAIL_ADDRESS = "http://wso2.org/claims/emailaddress";
     private final String EMAIL_VERIFIED_CLAIM_URI = "http://wso2.org/claims/emailverified";
-    private final String EMAIL_OTP = "email-otp";
+    private final String EMAIL_OTP = "otp";
 
     public String getName() {
 
