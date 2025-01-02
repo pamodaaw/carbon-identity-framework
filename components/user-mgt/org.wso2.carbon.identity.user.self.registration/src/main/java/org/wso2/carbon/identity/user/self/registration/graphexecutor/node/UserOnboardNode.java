@@ -18,11 +18,11 @@
 
 package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
 
-import java.net.HttpURLConnection;
-import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationClientException;
@@ -32,7 +32,6 @@ import org.wso2.carbon.identity.user.self.registration.internal.UserRegistration
 import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationRequestedUser;
-import org.wso2.carbon.identity.user.self.registration.util.RegistrationFrameworkUtils;
 import org.wso2.carbon.user.api.UserStoreException;
 import org.wso2.carbon.user.api.UserStoreManager;
 import org.wso2.carbon.user.core.common.AbstractUserStoreManager;
@@ -47,6 +46,8 @@ import static org.wso2.carbon.identity.user.self.registration.util.Constants.STA
  * Implementation of a node specific to onboarding the user.
  */
 public class UserOnboardNode extends AbstractNode {
+
+    private static final Log LOG = LogFactory.getLog(UserOnboardNode.class);
 
     public UserOnboardNode() {
 
@@ -103,7 +104,8 @@ public class UserOnboardNode extends AbstractNode {
             throw new RegistrationServerException(ERROR_ONBOARDING_USER.getCode(),
                                                   ERROR_ONBOARDING_USER.getMessage(),
                                                   String.format(ERROR_ONBOARDING_USER.getDescription(),
-                                                                user.getUsername()));
+                                                                user.getUsername()),
+                                                  e);
         }
     }
 
@@ -124,7 +126,7 @@ public class UserOnboardNode extends AbstractNode {
     private void updateUserProfile(RegistrationContext context) {
 
         context.getUserInputData().forEach((key, value) -> {
-            if (key.startsWith("http://wso2.org/claims/") && !key.equals("http://wso2.org/claims/username") ) {
+            if (key.startsWith("http://wso2.org/claims/")) {
                 if (!context.getRegisteringUser().getClaims().containsKey(key)) {
                     context.getRegisteringUser().addClaim(key, value);
                 }

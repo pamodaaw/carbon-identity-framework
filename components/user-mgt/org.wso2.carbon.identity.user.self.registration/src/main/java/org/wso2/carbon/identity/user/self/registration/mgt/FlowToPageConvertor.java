@@ -193,7 +193,9 @@ public class FlowToPageConvertor {
                     MetaDTO metaDTO = null;
                     if (firstExecutor.get("meta") != null) {
                         JsonNode exMeta = firstExecutor.get("meta");
-                        metaDTO =new MetaDTO(exMeta.get("idp").asText());
+                        if (exMeta != null && exMeta.has("idp")) {
+                            metaDTO = new MetaDTO(exMeta.get("idp").asText());
+                        }
                     }
                     exName = firstExecutor.path("name").asText();
                     ExecutorDTO executorDTO = new ExecutorDTO(exName, metaDTO);
