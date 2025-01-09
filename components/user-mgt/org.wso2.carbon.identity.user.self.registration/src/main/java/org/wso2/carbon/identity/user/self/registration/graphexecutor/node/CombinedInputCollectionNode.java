@@ -41,7 +41,6 @@ public class CombinedInputCollectionNode extends AbstractNode {
     }
 
 
-
     /**
      * Set the list of nodes referenced by this node when prompting user input.
      *

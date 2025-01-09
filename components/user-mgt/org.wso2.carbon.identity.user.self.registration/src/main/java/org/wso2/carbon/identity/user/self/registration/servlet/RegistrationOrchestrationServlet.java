@@ -51,7 +51,23 @@ public class RegistrationOrchestrationServlet extends HttpServlet {
             response.getWriter().write("{\"org\":\"" + superTenantDomain + "\", \"config\":" + configData + "}");
             response.setStatus(HttpServletResponse.SC_OK);
         } catch (Throwable e) {
-            log("Error while continuing the registration flow", e);
+            log("Error while creating the registration flow.", e);
+            buildStandardErrorResponse(response);
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException,
+            IOException {
+
+        try {
+            String configData = ConfigDataHolder.getInstance().getOrchestrationConfig().get(superTenantDomain);
+
+            response.setContentType("application/json");
+            response.getWriter().write(configData);
+            response.setStatus(HttpServletResponse.SC_OK);
+        } catch (Throwable e) {
+            log("Error while getting the registration flow.", e);
             buildStandardErrorResponse(response);
         }
     }

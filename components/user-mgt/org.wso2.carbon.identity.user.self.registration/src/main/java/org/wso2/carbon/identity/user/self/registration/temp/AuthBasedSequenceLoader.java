@@ -358,92 +358,6 @@ public class AuthBasedSequenceLoader {
         return sequence;
     }
 
-//    private RegSequence loadFlowFromDB(String flowId) throws RegistrationServerException {
-//
-//        RegistrationDTO regDto = null;
-//        try {
-//            regDto = FlowConvertor.adapt(flowId);
-//        } catch (IOException e) {
-//            throw new RegistrationServerException("Error while converting the registration flow.", e);
-//        }
-////        RegistrationDTO regDto;
-////
-////        try {
-////            regDto = RegistrationFlowDAO.retrieveRegistrationFlow(appId);
-////        } catch (SQLException e) {
-////            LOG.error("Error while loading the sequence for the app: " + appId, e);
-////            return null;
-////        }
-//        RegSequence sequence = new RegSequence();
-//        Map<String, Node> nodeMap = new HashMap<>();
-//        sequence.setId(regDto.getFlowID());
-//        for (NodeDTO nodeDTO : regDto.getNodeDTOList().values()) {
-//            Node node;
-//
-//            if ("EXECUTOR".equals(nodeDTO.getType())) {
-//                String executorId = nodeDTO.getProperties().get("EXECUTOR_ID");
-//                if (executorId == null) {
-//                    throw new RegistrationServerException("Executor ID is not defined for the node: " + nodeDTO.getId());
-//                }
-//                if (nodeDTO.getNextNodes().size() > 1) {
-//                    throw new RegistrationServerException("Multiple next nodes are defined for the executor node: " +
-//                                                                  nodeDTO.getId());
-//                }
-//                Executor mappedRegExecutor = null;
-//                if (executorId.equals("EmailOTPVerifier")) {
-//                    mappedRegExecutor = new EmailOTPExecutorTest();
-//                } else if (executorId.equals("PasswordOnboarder")) {
-//                    mappedRegExecutor = new PasswordOnboarderTest();
-//                } else if (executorId.equals("GoogleSignUp")) {
-//                    mappedRegExecutor = new GoogleSignupTest();
-//                } else {
-//                    throw new RegistrationServerException("Unsupported executor ID: " + executorId);
-//                }
-//                node = new TaskExecutionNode(mappedRegExecutor);
-//            } else if ("DECISION".equals(nodeDTO.getType())) {
-//                if (nodeDTO.getNextNodes().size() < 2) {
-//                    throw new RegistrationServerException(
-//                            "Less than two next nodes are defined for the decision node: " +
-//                                    nodeDTO.getId());
-//                }
-//                node = new UserChoiceDecisionNode(nodeDTO.getId());
-//            } else if ("INPUT".equals(nodeDTO.getType())) {
-//                if (nodeDTO.getNextNodes().size() > 1) {
-//                    throw new RegistrationServerException("Multiple next nodes are defined for the executor node: " +
-//                                                                  nodeDTO.getId());
-//                }
-//                node = new InputCollectNode(nodeDTO.getId());
-//            } else {
-//                throw new RegistrationServerException("Unsupported node type: " + nodeDTO.getType());
-//            }
-//            // Iterate properties and set them to the node.
-////            for (Map.Entry<String, String> property : nodeDTO.getProperties().entrySet()) {
-////                if (property.getKey().startsWith("PAGE_ID")) {
-////                    node.addPageId(property.getKey(), property.getValue());
-////                }
-////            }
-////            nodeDTO.getPageIds().forEach(node::addPageId);
-//            nodeMap.put(nodeDTO.getId(), node);
-//        }
-//
-//        for(NodeDTO nodeDTO : regDto.getNodeDTOList().values()) {
-//            if (nodeDTO.getNextNodes().size() == 1) {
-//                nodeMap.get(nodeDTO.getId()).setNextNode(nodeMap.get(nodeDTO.getNextNodes().get(0)));
-//            } else if (nodeDTO.getNextNodes().size() > 1) {
-//                List<Node> nextNodes = new ArrayList<>();
-//                for (String nextNodeId : nodeDTO.getNextNodes()) {
-//                    nextNodes.add(nodeMap.get(nextNodeId));
-//                }
-//                ((UserChoiceDecisionNode) nodeMap.get(nodeDTO.getId())).setNextNodes(nextNodes);
-//            }
-//        }
-//
-//        sequence.setFirstNodeId(nodeMap.get(regDto.getFirstNode()));
-//
-//        return sequence;
-//        // Load the sequence from the database
-//    }
-
     private RegSequence loadFlowFromFile(String flowId) throws RegistrationServerException {
 
         RegistrationDTO regDto;
@@ -472,7 +386,15 @@ public class AuthBasedSequenceLoader {
                 }
                 Executor mappedRegExecutor = null;
                 if (executorId.equals(Constants.EMAIL_OTP_EXECUTOR_NAME)) {
-                    mappedRegExecutor = new EmailOTPExecutorTest();
+                    for (Executor executor : UserRegistrationServiceDataHolder.getExecutors()) {
+                        if (executorId.equals(executor.getName())) {
+                            mappedRegExecutor = executor;
+                            break;
+                        }
+                    }
+                    if (mappedRegExecutor == null) {
+                        mappedRegExecutor = new EmailOTPExecutorTest();
+                    }
                 } else if (executorId.equals(Constants.PWD_EXECUTOR_NAME)) {
                     mappedRegExecutor = new PasswordOnboarderTest();
                 } else if (executorId.equals(Constants.GOOGLE_EXECUTOR_NAME)) {

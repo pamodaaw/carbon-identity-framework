@@ -29,6 +29,7 @@ import java.util.Base64;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.json.JSONObject;
@@ -77,7 +78,7 @@ public class GoogleSignupTest implements Authentication, AttributeCollection {
 //        if (STATUS_NEXT_ACTION_PENDING.equals(context.getExecutorStatus())) {
             response.setResult(STATUS_EXTERNAL_REDIRECTION);
             response.setRequiredData(getIdTokenRequirement());
-            response.setAdditionalInfo(getConfigurations());
+            response.setAdditionalInfo(getConfigurations(context));
             return response;
         }
 //        response.setResult("ERROR");
@@ -117,18 +118,19 @@ public class GoogleSignupTest implements Authentication, AttributeCollection {
         return inputMetaData;
     }
 
-    private Map<String, String> getConfigurations() {
+    private Map<String, String> getConfigurations(RegistrationContext context) {
 
         Map<String, String> googleProperties = new HashMap<>();
+        // Generate a random state using random UUID.
+        String state = UUID.randomUUID().toString();
         googleProperties.put("redirectUrl", "https://accounts.google.com/o/oauth2/auth?response_type=code" +
                 "&redirect_uri=https://localhost:9443/authenticationendpoint/self-registration.jsp" +
-                "&state=e12f-ed27-49e5-ad0a-8bbb5671d81e" +
-                "&client_id=795976161388-gptgu7h9o0o4cm96vai70cfm81chiu0r.apps.googleusercontent.com" +
+                "&state=" + state +
+                "&client_id=" +
                 "&scope=openid+email+profile");
-        googleProperties.put("state", "e12f-ed27-49e5-ad0a-8bbb5671d81e");
+        googleProperties.put("state", state);
         return googleProperties;
     }
-
 
     private Map<String, Object> doTokenCall(String authorizationCode) {
 

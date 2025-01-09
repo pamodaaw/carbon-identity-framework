@@ -40,7 +40,7 @@ public class Constants {
     public static final String STATUS_USER_CREATED = "USER_CREATED";
     public static final String NEW_FLOW = "newflow"; // temp constant to engage new flow.
 
-    public static final String PASSWORD = "PASSWORD";
+    public static final String PASSWORD = "password";
 
     public static final String PWD_EXECUTOR_NAME = "PasswordOnboarder";
     public static final String EMAIL_OTP_EXECUTOR_NAME = "EmailOTPVerifier";
