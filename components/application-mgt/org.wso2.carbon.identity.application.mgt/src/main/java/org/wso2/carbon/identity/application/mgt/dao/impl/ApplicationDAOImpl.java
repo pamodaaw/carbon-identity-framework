@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2023, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2014-2024, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -62,6 +62,8 @@ import org.wso2.carbon.identity.application.common.model.RoleMapping;
 import org.wso2.carbon.identity.application.common.model.RoleV2;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.application.common.model.ServiceProviderProperty;
+import org.wso2.carbon.identity.application.common.model.SpTrustedAppMetadata;
+import org.wso2.carbon.identity.application.common.model.TrustedApp;
 import org.wso2.carbon.identity.application.common.model.User;
 import org.wso2.carbon.identity.application.common.model.script.AuthenticationScriptConfig;
 import org.wso2.carbon.identity.application.common.util.IdentityApplicationManagementUtil;
@@ -75,8 +77,13 @@ import org.wso2.carbon.identity.application.mgt.dao.IdentityProviderDAO;
 import org.wso2.carbon.identity.application.mgt.dao.PaginatableFilterableApplicationDAO;
 import org.wso2.carbon.identity.application.mgt.internal.ApplicationManagementServiceComponent;
 import org.wso2.carbon.identity.application.mgt.internal.ApplicationManagementServiceComponentHolder;
+import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants.AuthenticationType;
+import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants.DefinedByType;
 import org.wso2.carbon.identity.base.IdentityException;
 import org.wso2.carbon.identity.base.IdentityRuntimeException;
+import org.wso2.carbon.identity.certificate.management.exception.CertificateMgtClientException;
+import org.wso2.carbon.identity.certificate.management.exception.CertificateMgtException;
+import org.wso2.carbon.identity.certificate.management.model.Certificate;
 import org.wso2.carbon.identity.core.CertificateRetrievingException;
 import org.wso2.carbon.identity.core.URLBuilderException;
 import org.wso2.carbon.identity.core.model.ExpressionNode;
@@ -87,9 +94,11 @@ import org.wso2.carbon.identity.core.model.OperationNode;
 import org.wso2.carbon.identity.core.util.IdentityDatabaseUtil;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
+import org.wso2.carbon.identity.core.util.JdbcUtils;
 import org.wso2.carbon.identity.role.v2.mgt.core.RoleConstants;
 import org.wso2.carbon.identity.role.v2.mgt.core.RoleManagementService;
 import org.wso2.carbon.identity.role.v2.mgt.core.exception.IdentityRoleManagementException;
+import org.wso2.carbon.identity.role.v2.mgt.core.model.RoleBasicInfo;
 import org.wso2.carbon.identity.secret.mgt.core.SecretManager;
 import org.wso2.carbon.identity.secret.mgt.core.exception.SecretManagementException;
 import org.wso2.carbon.identity.secret.mgt.core.model.ResolvedSecret;
@@ -100,11 +109,9 @@ import org.wso2.carbon.user.core.util.UserCoreUtil;
 import org.wso2.carbon.utils.DBUtils;
 import org.wso2.carbon.utils.multitenancy.MultitenantConstants;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -121,14 +128,16 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.OptionalInt;
 import java.util.Set;
-import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static java.util.Objects.isNull;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.ADVANCED_CONFIG;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.ALLOWED_APPLICATION_ENABLED_REQUEST_ATTRIBUTE_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.ALLOWED_ROLE_AUDIENCE_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.ALLOWED_ROLE_AUDIENCE_REQUEST_ATTRIBUTE_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.ANDROID;
@@ -137,6 +146,7 @@ import static org.wso2.carbon.identity.application.common.util.IdentityApplicati
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.APPLE_APP_ID_DISPLAY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.APPLE_APP_ID_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.APPLICATION_SECRET_TYPE_ANDROID_ATTESTATION_CREDENTIALS;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.ATTRIBUTE_SEPARATOR;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.CLIENT_ATTESTATION;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.CLIENT_ID_SP_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.Error.APPLICATION_ALREADY_EXISTS;
@@ -144,10 +154,13 @@ import static org.wso2.carbon.identity.application.common.util.IdentityApplicati
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.Error.INVALID_FILTER;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.Error.INVALID_LIMIT;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.Error.INVALID_OFFSET;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.Error.INVALID_REQUEST;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.Error.SORTING_NOT_IMPLEMENTED;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.ISSUER_SP_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_API_BASED_AUTHENTICATION_ENABLED_DISPLAY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_API_BASED_AUTHENTICATION_ENABLED_PROPERTY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_APPLICATION_ENABLED_DISPLAY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_APPLICATION_ENABLED_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_ATTESTATION_ENABLED_DISPLAY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_ATTESTATION_ENABLED_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_AUTH_SEQUENCE_BASED_SIGNUP_ENABLED_DISPLAY_NAME;
@@ -160,16 +173,29 @@ import static org.wso2.carbon.identity.application.common.util.IdentityApplicati
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.IS_SYSTEM_RESERVED_APP_FLAG;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.JWKS_URI_SP_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.NAME_SP_PROPERTY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.PlatformType;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.TEMPLATE_ID_SP_PROPERTY_DISPLAY_NAME;
 import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.TEMPLATE_ID_SP_PROPERTY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.TEMPLATE_VERSION_SP_PROPERTY_DISPLAY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.TEMPLATE_VERSION_SP_PROPERTY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.TRUSTED_APP_CONSENT_GRANTED_SP_PROPERTY_DISPLAY_NAME;
+import static org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants.TRUSTED_APP_CONSENT_GRANTED_SP_PROPERTY_NAME;
 import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.LOCAL_SP;
 import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.ORACLE;
+import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.PORTAL_NAMES_CONFIG_ELEMENT;
 import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.UNION_SEPARATOR;
 import static org.wso2.carbon.identity.application.mgt.ApplicationMgtUtil.getConsoleAccessUrlFromServerConfig;
 import static org.wso2.carbon.identity.application.mgt.ApplicationMgtUtil.getMyAccountAccessUrlFromServerConfig;
 import static org.wso2.carbon.identity.application.mgt.ApplicationMgtUtil.getUserTenantDomain;
 import static org.wso2.carbon.identity.application.mgt.dao.impl.ApplicationMgtDBQueries.ADD_APPLICATION_ASSOC_ROLES_TAIL;
 import static org.wso2.carbon.identity.application.mgt.dao.impl.ApplicationMgtDBQueries.ADD_APPLICATION_ASSOC_ROLES_TAIL_ORACLE;
+import static org.wso2.carbon.identity.application.mgt.dao.impl.ApplicationMgtDBQueries.GET_FILTERED_SHARED_APPLICATIONS;
+import static org.wso2.carbon.identity.application.mgt.dao.impl.ApplicationMgtDBQueries.SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_MAIN_APP_ID;
+import static org.wso2.carbon.identity.application.mgt.dao.impl.ApplicationMgtDBQueries.SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_OWNER_ORG_ID;
+import static org.wso2.carbon.identity.application.mgt.dao.impl.ApplicationMgtDBQueries.SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_SHARED_APP_ID;
+import static org.wso2.carbon.identity.application.mgt.dao.impl.ApplicationMgtDBQueries.SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_SHARED_ORG_ID;
+import static org.wso2.carbon.identity.application.mgt.dao.impl.ApplicationMgtDBQueries.SQLPlaceholders.SHARED_ORG_ID_LIST_PLACEHOLDER;
+import static org.wso2.carbon.identity.application.mgt.dao.impl.ApplicationMgtDBQueries.SQLPlaceholders.SHARED_ORG_ID_PLACEHOLDER_PREFIX;
 import static org.wso2.carbon.identity.base.IdentityConstants.SKIP_CONSENT;
 import static org.wso2.carbon.identity.base.IdentityConstants.SKIP_CONSENT_DISPLAY_NAME;
 import static org.wso2.carbon.identity.base.IdentityConstants.SKIP_LOGOUT_CONSENT;
@@ -195,8 +221,10 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
     private static final String SP_PROPERTY_NAME_CERTIFICATE = "CERTIFICATE";
     private static final String APPLICATION_NAME_CONSTRAINT = "APPLICATION_NAME_CONSTRAINT";
+    private static final String UUID = "UUID";
+    private static final String SPACE = " ";
 
-    private Log log = LogFactory.getLog(ApplicationDAOImpl.class);
+    private static final Log log = LogFactory.getLog(ApplicationDAOImpl.class);
     private static final Log AUDIT_LOG = CarbonConstants.AUDIT_LOG;
     private static final String AUDIT_MESSAGE = "Initiator : %s | Action : %s | Data : { %s } | Result :  %s ";
     private static final String AUDIT_SUCCESS = "Success";
@@ -348,11 +376,12 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
         Connection connection = IdentityDatabaseUtil.getDBConnection(true);
         try {
+            // Create basic application.
             ApplicationCreateResult result = persistBasicApplicationInformation(connection, application, tenantDomain);
             IdentityDatabaseUtil.commitTransaction(connection);
             return result.getApplicationId();
         } catch (SQLException e) {
-            IdentityDatabaseUtil.rollbackTransaction(connection);
+            rollbackAddApplicationTransaction(connection, application, tenantDomain);
             if (isApplicationConflict(e)) {
                 throw new IdentityApplicationManagementClientException(APPLICATION_ALREADY_EXISTS.getCode(),
                         "Application already exists with name: " + application.getApplicationName()
@@ -392,6 +421,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         String username = UserCoreUtil.removeDomainFromName(qualifiedUsername);
         String userStoreDomain = IdentityUtil.extractDomainFromName(qualifiedUsername);
         String applicationName = application.getApplicationName();
+        String applicationVersion = application.getApplicationVersion();
         String description = application.getDescription();
 
         if (log.isDebugEnabled()) {
@@ -409,7 +439,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             String dbProductName = connection.getMetaData().getDatabaseProductName();
             storeAppPrepStmt = connection.prepareStatement(
                     ApplicationMgtDBQueries.STORE_BASIC_APPINFO,
-                    new String[]{DBUtils.getConvertedAutoGeneratedColumnName(dbProductName, "ID")});
+                    new String[] {DBUtils.getConvertedAutoGeneratedColumnName(dbProductName, "ID")});
 
             // TENANT_ID, APP_NAME, USER_STORE, USERNAME, DESCRIPTION, AUTH_TYPE
             storeAppPrepStmt.setInt(1, tenantID);
@@ -426,6 +456,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             storeAppPrepStmt.setString(10, resourceId);
             storeAppPrepStmt.setString(11, application.getImageUrl());
             storeAppPrepStmt.setString(12, templatedAccessUrl);
+            storeAppPrepStmt.setString(13, applicationVersion);
             storeAppPrepStmt.execute();
 
             results = storeAppPrepStmt.getGeneratedKeys();
@@ -479,7 +510,6 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             serviceProviderProperties.add(allowedRoleAudienceProperty);
             application.setSpProperties(serviceProviderProperties.toArray(new ServiceProviderProperty[0]));
             addServiceProviderProperties(connection, applicationId, serviceProviderProperties, tenantID);
-
 
             if (log.isDebugEnabled()) {
                 log.debug("Application Stored successfully with applicationId: " + applicationId +
@@ -553,10 +583,13 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         int applicationId = serviceProvider.getApplicationID();
         Connection connection = IdentityDatabaseUtil.getDBConnection(true);
         try {
-            deleteApplicationConfigurations(connection, serviceProvider, applicationId);
+            deleteApplicationConfigurations(connection, serviceProvider, applicationId, tenantDomain);
             addApplicationConfigurations(connection, serviceProvider, tenantDomain);
 
             IdentityDatabaseUtil.commitTransaction(connection);
+        } catch (IdentityApplicationManagementClientException e) {
+            IdentityDatabaseUtil.rollbackTransaction(connection);
+            throw e;
         } catch (SQLException | UserStoreException | IdentityApplicationManagementException e) {
             IdentityDatabaseUtil.rollbackTransaction(connection);
             throw new IdentityApplicationManagementException("Failed to update application id: " + applicationId, e);
@@ -582,7 +615,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         // you can change application name, description, isSasApp...
         updateBasicApplicationData(serviceProvider, connection);
 
-        updateApplicationCertificate(serviceProvider, tenantID, connection);
+        updateApplicationCertificate(serviceProvider, tenantID);
 
         updateInboundProvisioningConfiguration(applicationId, serviceProvider.getInboundProvisioningConfig(),
                 connection);
@@ -603,6 +636,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
         updateOutboundProvisioningConfiguration(applicationId,
                 serviceProvider.getOutboundProvisioningConfig(), connection);
+        updateSpTrustedAppMetadata(applicationId, serviceProvider.getTrustedAppMetadata(), connection, tenantID);
 
         if (serviceProvider.getPermissionAndRoleConfig() != null) {
             updatePermissionAndRoleConfiguration(serviceProvider.getApplicationID(),
@@ -611,9 +645,14 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                     serviceProvider.getPermissionAndRoleConfig().getPermissions());
         }
 
-        // Update associated roles.
-        updateAssociatedRolesOfApplication(connection, serviceProvider.getApplicationResourceId(),
-                serviceProvider.getApplicationName(), serviceProvider.getAssociatedRolesConfig(), tenantDomain);
+        if (serviceProvider.getAssociatedRolesConfig() != null) {
+            String appAudience = serviceProvider.getAssociatedRolesConfig().getAllowedAudience();
+            // Update associated roles.
+            if (RoleConstants.APPLICATION.equalsIgnoreCase(appAudience)) {
+                updateAssociatedRolesOfApplication(connection, serviceProvider.getApplicationResourceId(),
+                        serviceProvider.getApplicationName(), serviceProvider.getAssociatedRolesConfig(), tenantDomain);
+            }
+        }
 
         updateConfigurationsAsServiceProperties(serviceProvider);
         if (ArrayUtils.isNotEmpty(serviceProvider.getSpProperties())) {
@@ -631,7 +670,9 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
     }
 
     private void deleteApplicationConfigurations(Connection connection, ServiceProvider serviceProvider,
-                                                 int applicationId) throws SQLException {
+                                                 int applicationId, String tenantDomain) throws SQLException {
+
+        int tenantID = IdentityTenantUtil.getTenantId(tenantDomain);
 
         // delete all in-bound authentication requests.
         deleteInboundAuthRequestConfiguration(serviceProvider.getApplicationID(), connection);
@@ -643,6 +684,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         deletePermissionAndRoleConfiguration(applicationId, connection);
         // deleteConsentPurposeConfiguration(connection, applicationId, tenantID);
         deleteAssociatedRolesConfigurations(connection, serviceProvider.getApplicationResourceId());
+        deleteSpTrustedAppMetadata(applicationId, connection, tenantID);
     }
 
     private void deleteAssociatedRolesConfigurations(Connection connection, String applicationId) throws SQLException {
@@ -733,85 +775,101 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
     }
 
     /**
-     * Updates the application certificate record in the database, with the certificate in the given service provider
-     * object. If the certificate content is available in the given service provider and a reference is not available,
-     * create a new database record for the certificate and add the reference to the given service provider object.
+     * Updates the application certificate record in the database using ApplicationCertificateMgtService,
+     * with the certificate in the given service provider object. If the certificate content is available in the given
+     * service provider and a reference is not available, create a new database record for the certificate and add the
+     * reference to the given service provider object.
      *
-     * @param serviceProvider
-     * @param tenantID
-     * @param connection
-     * @throws SQLException
+     * @param serviceProvider Service provider object.
+     * @param tenantID        Tenant ID.
+     * @throws IdentityApplicationManagementException If an error occurs while updating the certificate.
      */
-    private void updateApplicationCertificate(ServiceProvider serviceProvider, int tenantID,
-                                              Connection connection)
-            throws SQLException, IdentityApplicationManagementException {
+    private void updateApplicationCertificate(ServiceProvider serviceProvider, int tenantID)
+            throws IdentityApplicationManagementException {
 
-        // If the certificate content is empty, remove the certificate reference property if exists.
-        // And remove the certificate.
         if (StringUtils.isBlank(serviceProvider.getCertificateContent())) {
-
-            ServiceProviderProperty[] serviceProviderProperties = serviceProvider.getSpProperties();
-
-            if (serviceProviderProperties != null) {
-
-                // Get the index of the certificate reference property index in the properties array.
-                int certificateReferenceIdIndex = -1;
-                String certificateReferenceId = null;
-                for (int i = 0; i < serviceProviderProperties.length; i++) {
-                    if ("CERTIFICATE".equals(serviceProviderProperties[i].getName())) {
-                        certificateReferenceIdIndex = i;
-                        certificateReferenceId = serviceProviderProperties[i].getValue();
-                        break;
-                    }
-                }
-
-                // If there is a certificate reference, remove it from the properties array.
-                // Removing will be done by creating a new array and copying the elements other than the
-                // certificate reference from the existing array,
-                if (certificateReferenceIdIndex > -1) {
-
-                    ServiceProviderProperty[] propertiesWithoutCertificateReference =
-                            new ServiceProviderProperty[serviceProviderProperties.length - 1];
-
-                    System.arraycopy(serviceProviderProperties, 0, propertiesWithoutCertificateReference,
-                            0, certificateReferenceIdIndex);
-                    System.arraycopy(serviceProviderProperties, certificateReferenceIdIndex + 1,
-                            propertiesWithoutCertificateReference, certificateReferenceIdIndex,
-                            propertiesWithoutCertificateReference.length - certificateReferenceIdIndex);
-
-                    serviceProvider.setSpProperties(propertiesWithoutCertificateReference);
-                    deleteCertificate(connection, Integer.parseInt(certificateReferenceId));
-                }
-            }
+            // Remove the certificate reference property if exists and remove the certificate.
+            removeCertificateReferenceAndDelete(serviceProvider, tenantID);
         } else {
-            // First get the certificate reference from the application properties.
-            ServiceProviderProperty[] serviceProviderProperties = serviceProvider.getSpProperties();
-
-            String certificateReferenceIdString = getCertificateReferenceID(serviceProviderProperties);
-
-            // If there is a reference, update the relevant certificate record.
-            if (certificateReferenceIdString != null) { // Update the existing record.
-                PreparedStatement statementToUpdateCertificate = null;
-                try {
-                    statementToUpdateCertificate = connection.prepareStatement(
-                            ApplicationMgtDBQueries.UPDATE_CERTIFICATE);
-                    setBlobValue(serviceProvider.getCertificateContent(), statementToUpdateCertificate, 1);
-                    statementToUpdateCertificate.setInt(2, Integer.parseInt(certificateReferenceIdString));
-
-                    statementToUpdateCertificate.executeUpdate();
-                } catch (IOException e) {
-                    throw new IdentityApplicationManagementException("An error occurred while processing content " +
-                            "stream of certificate.", e);
-                } finally {
-                    IdentityApplicationManagementUtil.closeStatement(statementToUpdateCertificate);
-                }
+            String certificateReferenceIdString = getCertificateReferenceID(serviceProvider.getSpProperties());
+            if (certificateReferenceIdString != null) {
+                // If there is a reference, update the relevant existing certificate record.
+                updateCertificate(certificateReferenceIdString, serviceProvider.getCertificateContent(), tenantID);
             } else {
-                /*
-                 There is no existing reference.
-                 Persisting the certificate in the given service provider as a new record.
-                  */
-                persistApplicationCertificate(serviceProvider, tenantID, connection);
+                // There is no existing reference. Persisting the certificate as a new record.
+                persistApplicationCertificate(serviceProvider, tenantID);
             }
+        }
+    }
+
+    /**
+     * Removes the certificate reference property from the given service provider object and deletes the certificate
+     * record from the database.
+     *
+     * @param serviceProvider Service provider object.
+     * @param tenantID        Tenant ID.
+     * @throws IdentityApplicationManagementException If an error occurs while removing the certificate reference.
+     */
+    private void removeCertificateReferenceAndDelete(ServiceProvider serviceProvider, int tenantID)
+            throws IdentityApplicationManagementException {
+
+        ServiceProviderProperty[] spProperties = serviceProvider.getSpProperties();
+
+        if (spProperties == null) {
+            return;
+        }
+
+        OptionalInt certificateReferenceIdIndex = IntStream.range(0, spProperties.length)
+                .filter(index -> SP_PROPERTY_NAME_CERTIFICATE.equals(spProperties[index].getName()))
+                .findFirst();
+
+        if (certificateReferenceIdIndex.isPresent()) {
+            int certificateReferenceIndex = certificateReferenceIdIndex.getAsInt();
+            int certificateID = Integer.parseInt(spProperties[certificateReferenceIndex].getValue());
+
+            serviceProvider.setSpProperties(getFilteredSpProperties(spProperties, certificateReferenceIndex));
+            deleteCertificate(certificateID, IdentityTenantUtil.getTenantDomain(tenantID));
+        }
+    }
+
+    /**
+     * Returns a new array of service provider properties with the property at the specified index removed.
+     * This method creates a copy of the original `spProperties` array, omitting the element at `indexToRemove`.
+     *
+     * @param spProperties   An array of service provider properties.
+     * @param indexToRemove  The index of the property to be removed from the array.
+     * @return A new array of service provider properties, excluding the property at the specified index.
+     */
+    private ServiceProviderProperty[] getFilteredSpProperties(ServiceProviderProperty[] spProperties,
+                                                              int indexToRemove) {
+
+        ServiceProviderProperty[] updatedSpProperties = new ServiceProviderProperty[spProperties.length - 1];
+        System.arraycopy(spProperties, 0, updatedSpProperties, 0, indexToRemove);
+        System.arraycopy(spProperties, indexToRemove + 1, updatedSpProperties, indexToRemove,
+                updatedSpProperties.length - indexToRemove);
+
+        return updatedSpProperties;
+    }
+
+    /**
+     * Update the existing certificate record with the given certificate ID.
+     *
+     * @param certificateId      Certificate ID.
+     * @param certificateContent Certificate content to be updated.
+     * @param tenantID           Tenant ID.
+     * @throws IdentityApplicationManagementException If an error occurs while updating the certificate.
+     */
+    private void updateCertificate(String certificateId, String certificateContent, int tenantID)
+            throws IdentityApplicationManagementException {
+
+        try {
+            ApplicationManagementServiceComponentHolder.getInstance().getApplicationCertificateMgtService()
+                    .updateCertificateContent(Integer.parseInt(certificateId), certificateContent,
+                            IdentityTenantUtil.getTenantDomain(tenantID));
+        } catch (CertificateMgtClientException e) {
+            throw new IdentityApplicationManagementClientException(INVALID_REQUEST.getCode(), e.getDescription(), e);
+        } catch (CertificateMgtException e) {
+            throw new IdentityApplicationManagementException("Error while updating certificate", e);
         }
     }
 
@@ -838,35 +896,21 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
      * Persists the certificate content of the given service provider object,
      * and adds ID of the newly added certificate as a property of the service provider object.
      *
-     * @param serviceProvider
-     * @param tenantID
-     * @param connection
-     * @throws SQLException
+     * @param serviceProvider Service provider object.
+     * @param tenantID        Tenant ID.
+     * @throws IdentityApplicationManagementException If an error occurs while adding the certificate.
      */
-    private void persistApplicationCertificate(ServiceProvider serviceProvider, int tenantID,
-                                               Connection connection)
-            throws SQLException, IdentityApplicationManagementException {
+    private void persistApplicationCertificate(ServiceProvider serviceProvider, int tenantID)
+            throws IdentityApplicationManagementException {
 
-        // Configure the prepared statement to collect the auto generated id of the database record.
-        PreparedStatement statementToAddCertificate = null;
-        ResultSet results = null;
         try {
-
-            String dbProductName = connection.getMetaData().getDatabaseProductName();
-            statementToAddCertificate = connection.prepareStatement(ApplicationMgtDBQueries.ADD_CERTIFICATE,
-                    new String[]{DBUtils.getConvertedAutoGeneratedColumnName(dbProductName, "ID")});
-
-            statementToAddCertificate.setString(1, serviceProvider.getApplicationName());
-            setBlobValue(serviceProvider.getCertificateContent(), statementToAddCertificate, 2);
-            statementToAddCertificate.setInt(3, tenantID);
-            statementToAddCertificate.execute();
-
-            results = statementToAddCertificate.getGeneratedKeys();
-
-            int newlyAddedCertificateID = 0;
-            if (results.next()) {
-                newlyAddedCertificateID = results.getInt(1);
-            }
+            Certificate certificate = new Certificate.Builder()
+                    .name(serviceProvider.getApplicationName())
+                    .certificateContent(serviceProvider.getCertificateContent())
+                    .build();
+            int newlyAddedCertificateID = ApplicationManagementServiceComponentHolder.getInstance()
+                    .getApplicationCertificateMgtService().addCertificate(certificate,
+                            IdentityTenantUtil.getTenantDomain(tenantID));
 
             // Not all JDBC drivers support getting the auto generated database ID.
             // So if the ID is not returned, get the ID by querying the database passing the certificate name.
@@ -874,16 +918,14 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                 if (log.isDebugEnabled()) {
                     log.debug("JDBC Driver did not return the application id, executing Select operation");
                 }
-                newlyAddedCertificateID = getCertificateIDByName(serviceProvider.getApplicationName(),
-                        tenantID, connection);
+                newlyAddedCertificateID = getCertificateIDByName(serviceProvider.getApplicationName(), tenantID);
             }
             addApplicationCertificateReferenceAsServiceProviderProperty(serviceProvider, newlyAddedCertificateID);
-        } catch (IOException e) {
-            throw new IdentityApplicationManagementException("An error occurred while processing content stream " +
-                    "of certificate.", e);
-        } finally {
-            IdentityApplicationManagementUtil.closeResultSet(results);
-            IdentityApplicationManagementUtil.closeStatement(statementToAddCertificate);
+        } catch (CertificateMgtClientException e) {
+            throw new IdentityApplicationManagementClientException(INVALID_REQUEST.getCode(), e.getDescription(), e);
+        } catch (CertificateMgtException e) {
+            throw new IdentityApplicationManagementServerException("Error while adding certificate for application: " +
+                    serviceProvider.getApplicationName(), e);
         }
     }
 
@@ -910,8 +952,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         }
 
         ServiceProviderProperty propertyForCertificate = new ServiceProviderProperty();
-        propertyForCertificate.setDisplayName("CERTIFICATE");
-        propertyForCertificate.setName("CERTIFICATE");
+        propertyForCertificate.setDisplayName(SP_PROPERTY_NAME_CERTIFICATE);
+        propertyForCertificate.setName(SP_PROPERTY_NAME_CERTIFICATE);
         propertyForCertificate.setValue(String.valueOf(newlyAddedCertificateID));
 
         newServiceProviderProperties[newServiceProviderProperties.length - 1] = propertyForCertificate;
@@ -922,34 +964,28 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
     /**
      * Returns the database ID of the certificate with the given certificate name and the tenant ID.
      *
-     * @param applicationName
-     * @param tenantID
-     * @param connection
-     * @return
-     * @throws SQLException
+     * @param applicationName Name of the application.
+     * @param tenantID        Tenant ID.
+     * @return Certificate ID.
+     * @throws IdentityApplicationManagementException If an error occurs while retrieving the certificate ID.
      */
-    private int getCertificateIDByName(String applicationName, int tenantID, Connection connection)
-            throws SQLException {
+    private int getCertificateIDByName(String applicationName, int tenantID)
+            throws IdentityApplicationManagementException {
 
-        PreparedStatement statementToGetCertificateId = null;
-        ResultSet results = null;
         try {
-            statementToGetCertificateId = connection.prepareStatement(
-                    ApplicationMgtDBQueries.GET_CERTIFICATE_ID_BY_NAME);
-            statementToGetCertificateId.setString(1, applicationName);
-            statementToGetCertificateId.setInt(2, tenantID);
+            Certificate certificate = ApplicationManagementServiceComponentHolder.getInstance()
+                    .getApplicationCertificateMgtService().getCertificateByName(applicationName,
+                            IdentityTenantUtil.getTenantDomain(tenantID));
 
-            results = statementToGetCertificateId.executeQuery();
-
-            int applicationId = -1;
-            while (results.next()) {
-                applicationId = results.getInt(1);
+            int certificateId = -1;
+            if (certificate != null) {
+                certificateId = Integer.parseInt(certificate.getId());
             }
 
-            return applicationId;
-        } finally {
-            IdentityApplicationManagementUtil.closeResultSet(results);
-            IdentityApplicationManagementUtil.closeStatement(statementToGetCertificateId);
+            return certificateId;
+        } catch (CertificateMgtException e) {
+            throw new IdentityApplicationManagementException("Error while retrieving certificate ID by name " +
+                    "for application: " + applicationName, e);
         }
     }
 
@@ -965,6 +1001,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             throws SQLException, UserStoreException, IdentityApplicationManagementException {
 
         int applicationId = serviceProvider.getApplicationID();
+        String applicationVersion = ApplicationMgtUtil.getApplicationUpdatedVersion(serviceProvider);
         String applicationName = serviceProvider.getApplicationName();
         String description = serviceProvider.getDescription();
         boolean isSaasApp = serviceProvider.isSaasApp();
@@ -1040,6 +1077,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             }
             statement.setInt(ApplicationTableColumns.TENANT_ID, tenantID);
             statement.setInt(ApplicationTableColumns.ID, applicationId);
+            statement.setString(ApplicationTableColumns.APP_VERSION, applicationVersion);
 
             statement.executeUpdate();
         }
@@ -1489,7 +1527,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                         FederatedAuthenticatorConfig defaultAuth = new FederatedAuthenticatorConfig();
                         defaultAuth.setName(defualtAuthName);
                         fedIdp.setDefaultAuthenticatorConfig(defaultAuth);
-                        fedIdp.setFederatedAuthenticatorConfigs(new FederatedAuthenticatorConfig[]{defaultAuth});
+                        fedIdp.setFederatedAuthenticatorConfigs(new FederatedAuthenticatorConfig[] {defaultAuth});
                     }
                 }
 
@@ -1517,7 +1555,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                     try {
                         String dbProductName = connection.getMetaData().getDatabaseProductName();
                         storeStepPrepStmtz = connection.prepareStatement(
-                                ApplicationMgtDBQueries.STORE_STEP_INFO, new String[]{
+                                ApplicationMgtDBQueries.STORE_STEP_INFO, new String[] {
                                         DBUtils.getConvertedAutoGeneratedColumnName(dbProductName, "ID")});
                         // TENANT_ID, STEP_ORDER, APP_ID
                         storeStepPrepStmtz.setInt(1, tenantID);
@@ -1543,13 +1581,14 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                         for (LocalAuthenticatorConfig lclAuthenticator : authStep
                                 .getLocalAuthenticatorConfigs()) {
                             // set the identity provider name to LOCAL.
-                            int authenticatorId = getAuthentictorID(connection, tenantID,
+                            int authenticatorId = getAuthenticatorID(connection, tenantID,
                                     ApplicationConstants.LOCAL_IDP_NAME, lclAuthenticator.getName());
                             if (authenticatorId < 0) {
                                 authenticatorId = addAuthenticator(connection, tenantID,
                                         ApplicationConstants.LOCAL_IDP_NAME,
                                         lclAuthenticator.getName(),
-                                        lclAuthenticator.getDisplayName());
+                                        lclAuthenticator.getDisplayName(),
+                                        DefinedByType.SYSTEM.toString());
                             }
                             if (authenticatorId > 0) {
                                 // ID, TENANT_ID, AUTHENTICATOR_ID
@@ -1590,7 +1629,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                                 for (FederatedAuthenticatorConfig authenticator : authenticators) {
                                     // ID, TENANT_ID, AUTHENTICATOR_ID
                                     if (authenticator != null) {
-                                        int authenticatorId = getAuthentictorID(connection, tenantID,
+                                        int authenticatorId = getAuthenticatorID(connection, tenantID,
                                                 idpName, authenticator.getName());
                                         if (authenticatorId > 0) {
                                             storeStepIDPAuthnPrepStmt.setInt(1, stepId);
@@ -1821,6 +1860,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             localServiceProvider.setApplicationName(applicationName);
             localServiceProvider.setDescription("Local Service Provider");
             localServiceProvider.setSpProperties(prepareLocalSpProperties());
+            localServiceProvider.setApplicationVersion(ApplicationConstants.ApplicationVersion.LATEST_APP_VERSION);
             applicationId = createServiceProvider(tenantDomain, localServiceProvider);
         }
         return getApplication(applicationId);
@@ -1879,48 +1919,34 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
      * Retrieves the certificate content from the database using the certificate reference id property of a
      * service provider.
      *
-     * @param serviceProviderProperties
-     * @param connection
-     * @return
-     * @throws CertificateRetrievingException
+     * @param serviceProviderProperties List of service provider properties.
+     * @return Certificate content.
+     * @throws CertificateRetrievingException If an error occurs while retrieving the certificate.
      */
-    private String getCertificateContent(List<ServiceProviderProperty> serviceProviderProperties, Connection connection)
+    private String getCertificateContent(List<ServiceProviderProperty> serviceProviderProperties)
             throws CertificateRetrievingException {
 
         String certificateReferenceId = null;
         for (ServiceProviderProperty property : serviceProviderProperties) {
-            if ("CERTIFICATE".equals(property.getName())) {
+            if (SP_PROPERTY_NAME_CERTIFICATE.equals(property.getName())) {
                 certificateReferenceId = property.getValue();
             }
         }
 
         if (certificateReferenceId != null) {
-
-            PreparedStatement statementForFetchingCertificate = null;
-            ResultSet results = null;
+            Certificate certificate;
             try {
-                statementForFetchingCertificate = connection.prepareStatement(
-                        ApplicationMgtDBQueries.GET_CERTIFICATE_BY_ID);
-                statementForFetchingCertificate.setInt(1, Integer.parseInt(certificateReferenceId));
+                certificate = ApplicationManagementServiceComponentHolder.getInstance()
+                        .getApplicationCertificateMgtService().getCertificate(Integer.parseInt(certificateReferenceId),
+                                CarbonContext.getThreadLocalCarbonContext().getTenantDomain());
 
-                results = statementForFetchingCertificate.executeQuery();
-
-                String certificateContent = null;
-                while (results.next()) {
-                    certificateContent = getBlobValue(results.getBinaryStream("CERTIFICATE_IN_PEM"));
+                if (certificate != null) {
+                    return certificate.getCertificateContent();
                 }
-
-                if (certificateContent != null) {
-                    return certificateContent;
-                }
-            } catch (SQLException | IOException e) {
-                String errorMessage = "An error occurred while retrieving the certificate for the " +
-                        "application.";
+            } catch (CertificateMgtException e) {
+                String errorMessage = "An error occurred while retrieving the certificate for the application.";
                 log.error(errorMessage);
                 throw new CertificateRetrievingException(errorMessage, e);
-            } finally {
-                IdentityApplicationManagementUtil.closeResultSet(results);
-                IdentityApplicationManagementUtil.closeStatement(statementForFetchingCertificate);
             }
         }
         return null;
@@ -1964,7 +1990,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                 serviceProvider.setAccessUrl(basicAppDataResultSet.getString(ApplicationTableColumns.ACCESS_URL));
                 if (ApplicationMgtUtil.isConsoleOrMyAccount(applicationName)) {
                     serviceProvider.setAccessUrl(ApplicationMgtUtil.resolveOriginUrlFromPlaceholders(
-                            basicAppDataResultSet.getString(ApplicationTableColumns.ACCESS_URL)));
+                            basicAppDataResultSet.getString(ApplicationTableColumns.ACCESS_URL), applicationName));
                 }
                 String tenantDomain = IdentityTenantUtil.getTenantDomain(tenantID);
                 if (ApplicationMgtUtil.isConsole(serviceProvider.getApplicationName())) {
@@ -2048,12 +2074,21 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         return getApplicationBasicInfo(filter, offset, limit);
     }
 
+    @Deprecated
     @Override
     public ApplicationBasicInfo[] getApplicationBasicInfo(String filter, int offset, int limit)
             throws IdentityApplicationManagementException {
 
+        return getApplicationBasicInfo(filter, offset, limit, false);
+    }
+
+    @Override
+    public ApplicationBasicInfo[] getApplicationBasicInfo(String filter, int offset, int limit,
+                                                          Boolean excludeSystemPortals)
+            throws IdentityApplicationManagementException {
+
         if (StringUtils.isBlank(filter) || filter.equals(ASTERISK)) {
-            return getApplicationBasicInfo(offset, limit);
+            return getApplicationBasicInfo(offset, limit, excludeSystemPortals);
         }
 
         validateAttributesForPagination(offset, limit);
@@ -2072,38 +2107,44 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
             List<String> filterValues = filterData.getFilterValues();
             String filterString = filterData.getFilterString();
+            String excludeSystemPortalsQueryString = populateSystemPortalsExcludeQuery(excludeSystemPortals, true);
 
             String databaseProductName = connection.getMetaData().getDatabaseProductName();
             if (databaseProductName.contains("MySQL")
                     || databaseProductName.contains("MariaDB")
                     || databaseProductName.contains("H2")) {
-                sqlQuery = String.format(
-                        ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_AND_FILTER_MYSQL, filterString);
+                sqlQuery = String.format(ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_AND_FILTER_MYSQL,
+                        excludeSystemPortalsQueryString , filterString);
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
                 populateApplicationSearchQuery(getAppNamesStmt, tenantID, filterValues, offset, limit);
             } else if (databaseProductName.contains("Oracle")) {
                 sqlQuery = String.format(
-                        ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_AND_FILTER_ORACLE, filterString);
+                        ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_AND_FILTER_ORACLE,
+                        excludeSystemPortalsQueryString, filterString);
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
                 populateApplicationSearchQuery(getAppNamesStmt, tenantID, filterValues, offset + limit, offset);
             } else if (databaseProductName.contains("Microsoft")) {
                 sqlQuery = String.format(
-                        ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_AND_FILTER_MSSQL, filterString);
+                        ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_AND_FILTER_MSSQL,
+                        excludeSystemPortalsQueryString, filterString);
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
                 populateApplicationSearchQuery(getAppNamesStmt, tenantID, filterValues, offset, limit);
             } else if (databaseProductName.contains("PostgreSQL")) {
                 sqlQuery = String.format(
-                        ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_AND_FILTER_POSTGRESQL, filterString);
+                        ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_AND_FILTER_POSTGRESQL,
+                        excludeSystemPortalsQueryString, filterString);
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
                 populateApplicationSearchQuery(getAppNamesStmt, tenantID, filterValues, limit, offset);
             } else if (databaseProductName.contains("DB2")) {
                 sqlQuery = String.format(
-                        ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_AND_FILTER_DB2SQL, filterString);
+                        ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_AND_FILTER_DB2SQL,
+                        excludeSystemPortalsQueryString, filterString);
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
                 populateApplicationSearchQuery(getAppNamesStmt, tenantID, filterValues, offset, offset + limit);
             } else if (databaseProductName.contains("INFORMIX")) {
                 sqlQuery = String.format(
-                        ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_AND_FILTER_INFORMIX, filterString);
+                        ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_AND_FILTER_INFORMIX,
+                        excludeSystemPortalsQueryString, filterString);
                 String filterValueResolvedForSQL;
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
                 getAppNamesStmt.setInt(1, offset);
@@ -2141,7 +2182,31 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
     }
 
     /**
+     * Get query to exclude system portals if excludeSystemPortals is true.
+     *
+     * @param excludeSystemPortals  Exclude system portals.
+     * @param useTableNameInQuery   Use the table name in query.
+     * @return String Query to exclude system portals.
+     */
+    private String populateSystemPortalsExcludeQuery(Boolean excludeSystemPortals, Boolean useTableNameInQuery) {
+
+        if (excludeSystemPortals) {
+            String excludeSystemPortalsQuery = useTableNameInQuery ?
+                    ApplicationMgtDBQueries.EXCLUDE_SYSTEM_PORTALS_BY_TABLE_NAME_AND_NAME :
+                    ApplicationMgtDBQueries.EXCLUDE_SYSTEM_PORTALS_BY_NAME;
+            List<String> systemPortals = IdentityUtil.getPropertyAsList(PORTAL_NAMES_CONFIG_ELEMENT);
+            return systemPortals.isEmpty() ? StringUtils.EMPTY :
+                    String.format(excludeSystemPortalsQuery, systemPortals.stream()
+                                    .map(s -> "'" + s + "'")
+                                    .collect(Collectors.joining(", ")));
+        } else {
+            return StringUtils.EMPTY;
+        }
+    }
+
+    /**
      * Set values to the prepare statement for searching applications
+     *
      * @param getAppNamesStmt
      * @param tenantID
      * @param start
@@ -2150,6 +2215,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
      */
     private void populateApplicationSearchQuery(PreparedStatement getAppNamesStmt, int tenantID,
                                                 List<String> filterValues, int start, int end) throws SQLException {
+
         String filterValueResolvedForSQL;
         getAppNamesStmt.setInt(1, tenantID);
         getAppNamesStmt.setString(2, LOCAL_SP);
@@ -2178,6 +2244,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
             serviceProvider.setJwksUri(getJwksUri(propertyList));
             serviceProvider.setTemplateId(getTemplateId(propertyList));
+            serviceProvider.setTemplateVersion(getTemplateVersion(propertyList));
+            serviceProvider.setApplicationEnabled(getIsApplicationEnabled(propertyList));
             serviceProvider.setManagementApp(getIsManagementApp(propertyList));
             serviceProvider.setB2BSelfServiceApp(getIsB2BSSApp(propertyList));
             serviceProvider.setAPIBasedAuthenticationEnabled(getIsAPIBasedAuthenticationEnabled(propertyList));
@@ -2192,6 +2260,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                         (getAndroidAttestationServiceCredentials(serviceProvider));
             }
             serviceProvider.setClientAttestationMetaData(clientAttestationMetaData);
+            serviceProvider.setTrustedAppMetadata(
+                    getSpTrustedAppMetadata(applicationId, connection, tenantID, propertyList));
             serviceProvider.setInboundAuthenticationConfig(getInboundAuthenticationConfig(
                     applicationId, connection, tenantID));
             serviceProvider
@@ -2220,7 +2290,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             serviceProvider.setRequestPathAuthenticatorConfigs(requestPathAuthenticators);
 
             serviceProvider.setSpProperties(propertyList.toArray(new ServiceProviderProperty[0]));
-            serviceProvider.setCertificateContent(getCertificateContent(propertyList, connection));
+            serviceProvider.setCertificateContent(getCertificateContent(propertyList));
 
             // Set role associations.
             serviceProvider.setAssociatedRolesConfig(
@@ -2250,22 +2320,56 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         String tenantDomain = IdentityTenantUtil.getTenantDomain(tenantID);
         AssociatedRolesConfig associatedRolesConfig = new AssociatedRolesConfig();
         List<String> associatedRoleIds = new ArrayList<>();
-        try (NamedPreparedStatement preparedStatement = new NamedPreparedStatement(connection,
-                ApplicationMgtDBQueries.LOAD_ASSOCIATED_ROLES)) {
-            preparedStatement.setString(ApplicationMgtDBQueries.SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_APP_ID,
-                    applicationId);
-            try (ResultSet resultSet = preparedStatement.executeQuery()) {
-                while (resultSet.next()) {
-                    associatedRoleIds.add(resultSet.getString(1));
-                }
-            }
-            associatedRolesConfig.setRoles(buildAssociatedRolesWithRoleName(associatedRoleIds, tenantDomain));
-        } catch (SQLException | IdentityRoleManagementException e) {
-            throw new IdentityApplicationManagementException(
-                    "Error while retrieving associated roles for application ID: " + applicationId, e);
-        }
         String allowedAudience =
                 getSPPropertyValueByPropertyKey(applicationId, ALLOWED_ROLE_AUDIENCE_PROPERTY_NAME, tenantDomain);
+        if (RoleConstants.APPLICATION.equalsIgnoreCase(allowedAudience)) {
+            try (NamedPreparedStatement preparedStatement = new NamedPreparedStatement(connection,
+                    ApplicationMgtDBQueries.LOAD_ASSOCIATED_ROLES)) {
+                preparedStatement.setString(ApplicationMgtDBQueries.SQLPlaceholders.DB_SCHEMA_COLUMN_NAME_APP_ID,
+                        applicationId);
+                try (ResultSet resultSet = preparedStatement.executeQuery()) {
+                    while (resultSet.next()) {
+                        associatedRoleIds.add(resultSet.getString(1));
+                    }
+                }
+
+                associatedRolesConfig.setRoles(buildAssociatedRolesWithRoleName(associatedRoleIds, tenantDomain));
+            } catch (SQLException | IdentityRoleManagementException e) {
+                throw new IdentityApplicationManagementException(
+                        "Error while retrieving associated roles for application ID: " + applicationId, e);
+            }
+        } else if (RoleConstants.ORGANIZATION.equalsIgnoreCase(allowedAudience)) {
+            ApplicationManagementServiceComponentHolder holder = ApplicationManagementServiceComponentHolder.
+                    getInstance();
+            RoleManagementService roleManagementService = holder.getRoleManagementServiceV2();
+            try {
+                List<RoleBasicInfo> chunkOfRoles;
+                int offset = 1;
+                int maximumPage = IdentityUtil.getMaximumItemPerPage();
+                List<RoleBasicInfo> allRoles = new ArrayList<>();
+                if (roleManagementService != null) {
+                    do {
+                        chunkOfRoles = roleManagementService.
+                                getRoles(RoleConstants.AUDIENCE + SPACE + RoleConstants.EQ + SPACE +
+                                                RoleConstants.ORGANIZATION, maximumPage, offset, null, null,
+                                        tenantDomain);
+                        if (!chunkOfRoles.isEmpty()) {
+                            allRoles.addAll(chunkOfRoles);
+                            offset += chunkOfRoles.size(); // Move to the next chunk
+                        }
+                    } while (chunkOfRoles.size() == maximumPage);
+
+                    List<String> roleIds = allRoles.stream().map(RoleBasicInfo::getId).collect(Collectors.
+                            toList());
+                    associatedRolesConfig.setRoles(buildAssociatedRolesWithRoleName(roleIds, tenantDomain));
+                }
+            } catch (IdentityRoleManagementException e) {
+                throw new IdentityApplicationManagementException("Error while retrieving associated roles for " +
+                        "application ID: " + applicationId, e);
+            }
+
+        }
+
         associatedRolesConfig.setAllowedAudience(
                 StringUtils.isNotBlank(allowedAudience) ? allowedAudience.toLowerCase() : RoleConstants.ORGANIZATION);
         return associatedRolesConfig;
@@ -2309,11 +2413,11 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
             ServiceProvider serviceProvider = getBasicApplicationData(applicationId, connection);
             if (serviceProvider == null) {
-                return  null;
+                return null;
             }
             tenantID = IdentityTenantUtil.getTenantId(serviceProvider.getTenantDomain());
             return getLocalAndOutboundAuthenticationConfig(applicationId, connection, tenantID, null);
-        } catch (SQLException | IdentityRuntimeException  e) {
+        } catch (SQLException | IdentityRuntimeException e) {
             throw new IdentityApplicationManagementException("Failed to get configured authenticators for application" +
                     " id: " + applicationResourceId, e);
         }
@@ -2343,10 +2447,13 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                         readAndSetConfigurationsFromProperties(propertyList,
                                 serviceProvider.getLocalAndOutBoundAuthenticationConfig());
                         serviceProvider.setSpProperties(propertyList.toArray(new ServiceProviderProperty[0]));
-                        serviceProvider.setCertificateContent(getCertificateContent(propertyList, connection));
+                        serviceProvider.setCertificateContent(getCertificateContent(propertyList));
                     }
                     if (TEMPLATE_ID_SP_PROPERTY_NAME.equals(requiredAttribute)) {
                         serviceProvider.setTemplateId(getTemplateId(propertyList));
+                    }
+                    if (TEMPLATE_VERSION_SP_PROPERTY_NAME.equals(requiredAttribute)) {
+                        serviceProvider.setTemplateVersion(getTemplateVersion(propertyList));
                     }
                     if (CLIENT_ID_SP_PROPERTY_NAME.equals(requiredAttribute) ||
                             ISSUER_SP_PROPERTY_NAME.equals(requiredAttribute)) {
@@ -2361,6 +2468,14 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                                     AssociatedRolesConfig configExcludingRoles = new AssociatedRolesConfig();
                                     configExcludingRoles.setAllowedAudience(property.getValue());
                                     serviceProvider.setAssociatedRolesConfig(configExcludingRoles);
+                                });
+                    }
+                    if (ALLOWED_APPLICATION_ENABLED_REQUEST_ATTRIBUTE_NAME.equals(requiredAttribute)) {
+                        propertyList.stream()
+                                .filter(property -> IS_APPLICATION_ENABLED_PROPERTY_NAME.equals(property.getName()))
+                                .findFirst()
+                                .ifPresent(property -> {
+                                    serviceProvider.setApplicationEnabled(Boolean.parseBoolean(property.getValue()));
                                 });
                     }
                 }
@@ -2394,6 +2509,18 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                 .findFirst()
                 .map(ServiceProviderProperty::getValue)
                 .orElse(StringUtils.EMPTY);
+        return Boolean.parseBoolean(value);
+    }
+
+    private boolean getIsApplicationEnabled(List<ServiceProviderProperty> propertyList) {
+
+        String value = propertyList.stream()
+                .filter(property -> IS_APPLICATION_ENABLED_PROPERTY_NAME.equals(property.getName()))
+                .findFirst()
+                .map(ServiceProviderProperty::getValue)
+                .orElse("true");
+        // This is to ensure the previously created applications will have the flag,
+        // enabled unless set to false explicitly. Newly created apps will have this flag enabled by default.
         return Boolean.parseBoolean(value);
     }
 
@@ -2476,6 +2603,21 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                 .orElse(StringUtils.EMPTY);
     }
 
+    /**
+     * Retrieve the template version from the provided service provider property list.
+     *
+     * @param propertyList Service provider property list.
+     * @return Template version or an empty string.
+     */
+    private String getTemplateVersion(List<ServiceProviderProperty> propertyList) {
+
+        return propertyList.stream()
+                .filter(property -> TEMPLATE_VERSION_SP_PROPERTY_NAME.equals(property.getName()))
+                .findFirst()
+                .map(ServiceProviderProperty::getValue)
+                .orElse(StringUtils.EMPTY);
+    }
+
     private String getJwksUri(List<ServiceProviderProperty> propertyList) {
 
         return propertyList.stream()
@@ -2483,6 +2625,19 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                 .findFirst()
                 .map(ServiceProviderProperty::getValue)
                 .orElse(StringUtils.EMPTY);
+    }
+
+    private boolean getTrustedAppConsent(List<ServiceProviderProperty> propertyList) {
+
+        String consent = propertyList.stream()
+                .filter(property -> TRUSTED_APP_CONSENT_GRANTED_SP_PROPERTY_NAME.equals(property.getName()))
+                .findFirst()
+                .map(ServiceProviderProperty::getValue)
+                .orElse(StringUtils.EMPTY);
+        if (StringUtils.EMPTY.equals(consent)) {
+            return false;
+        }
+        return Boolean.parseBoolean(consent);
     }
 
     /**
@@ -2512,13 +2667,14 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                 serviceProvider.setApplicationID(rs.getInt(ApplicationTableColumns.ID));
                 serviceProvider.setApplicationResourceId(rs.getString(ApplicationTableColumns.UUID));
                 serviceProvider.setApplicationName(rs.getString(ApplicationTableColumns.APP_NAME));
+                serviceProvider.setApplicationVersion(rs.getString(ApplicationTableColumns.APP_VERSION));
                 serviceProvider.setDescription(rs.getString(ApplicationTableColumns.DESCRIPTION));
                 serviceProvider.setImageUrl(rs.getString(ApplicationTableColumns.IMAGE_URL));
 
                 serviceProvider.setAccessUrl(rs.getString(ApplicationTableColumns.ACCESS_URL));
                 if (ApplicationMgtUtil.isConsoleOrMyAccount(serviceProvider.getApplicationName())) {
                     serviceProvider.setAccessUrl(ApplicationMgtUtil.resolveOriginUrlFromPlaceholders(
-                            rs.getString(ApplicationTableColumns.ACCESS_URL)));
+                            rs.getString(ApplicationTableColumns.ACCESS_URL), serviceProvider.getApplicationName()));
                 }
                 String tenantDomain = IdentityTenantUtil.getTenantDomain(rs.getInt(ApplicationTableColumns.TENANT_ID));
                 if (ApplicationMgtUtil.isConsole(serviceProvider.getApplicationName())) {
@@ -2604,7 +2760,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
      * @return
      * @throws SQLException
      */
-    private String getAuthenticationType(int applicationid,  int tenantID, Connection connection)
+    private String getAuthenticationType(int applicationid, int tenantID, Connection connection)
             throws SQLException {
 
         PreparedStatement authTypeStmt = null;
@@ -2876,7 +3032,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                             prop.setDisplayName(mappedProperty.getDisplayName());
                         }
                     }
-                    inboundAuthRequest.setProperties((ApplicationMgtUtil.concatArrays(new Property[]{prop},
+                    inboundAuthRequest.setProperties((ApplicationMgtUtil.concatArrays(new Property[] {prop},
                             inboundAuthRequest.getProperties())));
                 }
                 inboundAuthenticationRequestConfigMap.put(mapKey, inboundAuthRequest);
@@ -2992,6 +3148,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                             .get(ApplicationConstants.IDP_AUTHENTICATOR_NAME));
                     localAuthenticator.setDisplayName(authenticatorInfo
                             .get(ApplicationConstants.IDP_AUTHENTICATOR_DISPLAY_NAME));
+                    localAuthenticator.setDefinedByType(DefinedByType.valueOf(
+                            authenticatorInfo.get(ApplicationConstants.IDP_AUTHENTICATOR_DEFINED_BY_TYPE)));
                     stepLocalAuth.get(step).add(localAuthenticator);
                 } else {
                     Map<String, List<FederatedAuthenticatorConfig>> stepFedIdps = stepFedIdPAuthenticators
@@ -3010,6 +3168,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                             .get(ApplicationConstants.IDP_AUTHENTICATOR_NAME));
                     fedAuthenticator.setDisplayName(authenticatorInfo
                             .get(ApplicationConstants.IDP_AUTHENTICATOR_DISPLAY_NAME));
+                    fedAuthenticator.setDefinedByType(DefinedByType.valueOf(
+                            authenticatorInfo.get(ApplicationConstants.IDP_AUTHENTICATOR_DEFINED_BY_TYPE)));
                     idpAuths.add(fedAuthenticator);
                 }
 
@@ -3329,8 +3489,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                         claimConfig.setMappedLocalSubjectMandatory(true);
                         break;
                     default:
-                       claimConfig.setAlwaysSendMappedLocalSubjectId(false);
-                       claimConfig.setMappedLocalSubjectMandatory(false);
+                        claimConfig.setAlwaysSendMappedLocalSubjectId(false);
+                        claimConfig.setMappedLocalSubjectMandatory(false);
                 }
             }
         } catch (SQLException e) {
@@ -3464,6 +3624,135 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
     }
 
     /**
+     * Get trusted app metadata of the application.
+     *
+     * @param applicationId  Application ID.
+     * @param connection     Database connection.
+     * @param tenantID       Tenant ID.
+     * @param spPropertyList Sp property list.
+     * @return trustedAppMetadata Trusted app configurations.
+     * @throws IdentityApplicationManagementException If an error occurs while retrieving trusted app configurations.
+     */
+    private SpTrustedAppMetadata getSpTrustedAppMetadata(int applicationId, Connection connection, int tenantID,
+                                                         List<ServiceProviderProperty> spPropertyList)
+            throws IdentityApplicationManagementException {
+
+        if (log.isDebugEnabled()) {
+            log.debug("Retrieving trusted app configurations for application: " + applicationId);
+        }
+        SpTrustedAppMetadata spTrustedAppMetadata = null;
+
+        try (PreparedStatement loadAppConfigs = connection
+                .prepareStatement(ApplicationMgtDBQueries.LOAD_TRUSTED_APPS_BY_APP_ID)) {
+            loadAppConfigs.setInt(1, applicationId);
+            loadAppConfigs.setInt(2, tenantID);
+
+            try (ResultSet appConfigResultSet = loadAppConfigs.executeQuery()) {
+                while (appConfigResultSet.next()) {
+                    if (spTrustedAppMetadata == null) {
+                        spTrustedAppMetadata = new SpTrustedAppMetadata();
+                    }
+                    // There should be maximum two entries for each service provider. One for Android and one for iOS.
+                    PlatformType platformType = PlatformType.valueOf(appConfigResultSet.getString(1));
+                    if (PlatformType.ANDROID.equals(platformType)) {
+                        spTrustedAppMetadata.setAndroidPackageName(appConfigResultSet.getString(2));
+                        if (appConfigResultSet.getString(3) != null) {
+                            spTrustedAppMetadata.setAndroidThumbprints(
+                                    appConfigResultSet.getString(3).split(ATTRIBUTE_SEPARATOR));
+                        } else {
+                            spTrustedAppMetadata.setAndroidThumbprints(new String[0]);
+                        }
+                    } else if (PlatformType.IOS.equals(platformType)) {
+                        spTrustedAppMetadata.setAppleAppId(appConfigResultSet.getString(2));
+                    }
+                    spTrustedAppMetadata.setIsFidoTrusted(appConfigResultSet.getBoolean(4));
+                }
+                if (spTrustedAppMetadata != null) {
+                    // If consent required property is disabled, consent is always considered as granted.
+                    spTrustedAppMetadata.setIsConsentGranted(!ApplicationMgtUtil.isTrustedAppConsentRequired() ||
+                            getTrustedAppConsent(spPropertyList));
+                }
+            }
+
+        } catch (SQLException e) {
+            throw new IdentityApplicationManagementException("Error while retrieving trusted app configurations.", e);
+        }
+        return spTrustedAppMetadata;
+    }
+
+    /**
+     * Update trusted app metadata of the application.
+     *
+     * @param applicationId      Application ID.
+     * @param trustedAppMetadata Trusted app configurations.
+     * @param connection         Database connection.
+     * @param tenantID           Tenant ID.
+     * @throws IdentityApplicationManagementException If an error occurs while updating trusted app configurations.
+     */
+    private void updateSpTrustedAppMetadata(int applicationId, SpTrustedAppMetadata trustedAppMetadata,
+                                            Connection connection, int tenantID)
+            throws IdentityApplicationManagementException {
+
+        if (log.isDebugEnabled()) {
+            log.debug("Adding trusted app configurations for application: " + applicationId);
+        }
+
+        if (trustedAppMetadata != null) {
+            try (PreparedStatement storeAppConfigs = connection
+                    .prepareStatement(ApplicationMgtDBQueries.STORE_TRUSTED_APPS)) {
+
+                storeAppConfigs.setInt(1, applicationId);
+                storeAppConfigs.setBoolean(5, trustedAppMetadata.getIsFidoTrusted());
+                storeAppConfigs.setInt(6, tenantID);
+
+                if (StringUtils.isNotBlank(trustedAppMetadata.getAndroidPackageName())) {
+                    storeAppConfigs.setString(2, PlatformType.ANDROID.toString());
+                    storeAppConfigs.setString(3, trustedAppMetadata.getAndroidPackageName());
+                    if (trustedAppMetadata.getAndroidThumbprints() != null) {
+                        storeAppConfigs.setString(4, String.join(ATTRIBUTE_SEPARATOR,
+                                trustedAppMetadata.getAndroidThumbprints()));
+                    } else {
+                        storeAppConfigs.setString(4, null);
+                    }
+                    storeAppConfigs.addBatch();
+                }
+                if (StringUtils.isNotBlank(trustedAppMetadata.getAppleAppId())) {
+                    storeAppConfigs.setString(2, PlatformType.IOS.toString());
+                    storeAppConfigs.setString(3, trustedAppMetadata.getAppleAppId());
+                    storeAppConfigs.setString(4, null);
+                    storeAppConfigs.addBatch();
+                }
+                storeAppConfigs.executeBatch();
+            } catch (SQLException e) {
+                throw new IdentityApplicationManagementException("Error while storing trusted app configurations.", e);
+            }
+        }
+    }
+
+    /**
+     * Delete trusted app metadata of the application.
+     *
+     * @param applicationID Application ID.
+     * @param connection    Database connection.
+     * @param tenantID      Tenant ID.
+     * @throws SQLException If an error occurs while deleting trusted app configurations.
+     */
+    private void deleteSpTrustedAppMetadata(int applicationID, Connection connection, int tenantID)
+            throws SQLException {
+
+        if (log.isDebugEnabled()) {
+            log.debug("Deleting trusted app configurations for application: " + applicationID);
+        }
+
+        try (PreparedStatement deleteAppConfigsPrepStmt = connection
+                .prepareStatement(ApplicationMgtDBQueries.REMOVE_TRUSTED_APPS)) {
+            deleteAppConfigsPrepStmt.setInt(1, applicationID);
+            deleteAppConfigsPrepStmt.setInt(2, tenantID);
+            deleteAppConfigsPrepStmt.execute();
+        }
+    }
+
+    /**
      * Reads the claim mappings for a given appID
      *
      * @param applicationId
@@ -3586,6 +3875,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                 basicInfo.setApplicationId(appNameResultSet.getInt("ID"));
                 basicInfo.setApplicationName(appNameResultSet.getString("APP_NAME"));
                 basicInfo.setDescription(appNameResultSet.getString("DESCRIPTION"));
+                basicInfo.setApplicationVersion(appNameResultSet.getString(ApplicationTableColumns.APP_VERSION));
                 appInfo.add(basicInfo);
             }
 
@@ -3669,8 +3959,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                     operationNode.getOperation() + " " + rightNodeFilterData.getFilterString());
             filterData.setFilterValues(
                     Stream.of(leftNodeFilterData.getFilterValues(), rightNodeFilterData.getFilterValues())
-                    .flatMap(Collection::stream)
-                    .collect(Collectors.toList()));
+                            .flatMap(Collection::stream)
+                            .collect(Collectors.toList()));
         }
         return filterData;
     }
@@ -3722,8 +4012,24 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
      * @return
      * @throws IdentityApplicationManagementException
      */
+    @Deprecated
     @Override
     public int getCountOfApplications(String filter) throws IdentityApplicationManagementException {
+
+        return getCountOfApplications(filter, false);
+    }
+
+    /**
+     * Get count of applications for user which has the filter string
+     *
+     * @param filter                Filter string.
+     * @param excludeSystemPortals  Exclude system portals.
+     * @return  int Count of applications.
+     * @throws IdentityApplicationManagementException
+     */
+    @Override
+    public int getCountOfApplications(String filter, Boolean excludeSystemPortals)
+            throws IdentityApplicationManagementException {
 
         int tenantID = CarbonContext.getThreadLocalCarbonContext().getTenantId();
         int count;
@@ -3737,12 +4043,14 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         ResultSet appNameResultSet = null;
 
         FilterData filterData = getFilterDataForDBQuery(filter);
+        String filterString = filterData.getFilterString();
+        String excludeSystemPortalsQueryString = populateSystemPortalsExcludeQuery(excludeSystemPortals, true);
 
         try {
             String filterValueResolvedForSQL;
-            getAppNamesStmt = connection.prepareStatement(
-                    String.format(
-                            ApplicationMgtDBQueries.LOAD_APP_COUNT_BY_TENANT_AND_FILTER, filterData.getFilterString()));
+            getAppNamesStmt = connection.prepareStatement(String.format
+                    (ApplicationMgtDBQueries.LOAD_APP_COUNT_BY_TENANT_AND_FILTER, excludeSystemPortalsQueryString,
+                            filterString));
             getAppNamesStmt.setInt(1, tenantID);
             getAppNamesStmt.setString(2, LOCAL_SP);
             for (int i = 0; i < filterData.getFilterValues().size(); i++) {
@@ -3762,6 +4070,50 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         }
 
         return count;
+    }
+
+    /**
+     * Retrieve application basic information using the sp metadata property key and value.
+     *
+     * @param key   Name of the sp metadata property key
+     * @param value Value of the sp metadata property value
+     * @return Filtered applications' basic information.
+     * @throws IdentityApplicationManagementException if loading application information based on the
+     *                                                SP properties is failed.
+     */
+    @Override
+    public ApplicationBasicInfo[] getApplicationBasicInfoBySPProperty(String key, String value)
+            throws IdentityApplicationManagementException {
+
+        int tenantID = CarbonContext.getThreadLocalCarbonContext().getTenantId();
+        if (log.isDebugEnabled()) {
+            log.debug(String.format("Getting all applications matching property: %s with value %s in tenant %d",
+                    key, value, tenantID));
+        }
+
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(false);
+             PreparedStatement getAppNamesStmt = connection.prepareStatement(JdbcUtils.isH2DB() ?
+                     ApplicationMgtDBQueries.LOAD_APP_IDS_BY_SP_PROPERTY_H2 :
+                     ApplicationMgtDBQueries.LOAD_APP_IDS_BY_SP_PROPERTY)) {
+
+            getAppNamesStmt.setString(1, key);
+            getAppNamesStmt.setString(2, value);
+            getAppNamesStmt.setInt(3, tenantID);
+
+            try (ResultSet appNameResultSet = getAppNamesStmt.executeQuery()) {
+                ArrayList<ApplicationBasicInfo> appInfo = new ArrayList<>();
+
+                while (appNameResultSet.next()) {
+                    ApplicationBasicInfo basicInfo = new ApplicationBasicInfo();
+                    basicInfo.setUuid(appNameResultSet.getString(UUID));
+                    appInfo.add(basicInfo);
+                }
+
+                return appInfo.toArray(new ApplicationBasicInfo[0]);
+            }
+        } catch (SQLException | DataAccessException e) {
+            throw new IdentityApplicationManagementException("Error while getting applications from DB", e);
+        }
     }
 
     /**
@@ -3807,6 +4159,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                 basicInfo.setApplicationId(appNameResultSet.getInt("ID"));
                 basicInfo.setApplicationName(appNameResultSet.getString("APP_NAME"));
                 basicInfo.setDescription(appNameResultSet.getString("DESCRIPTION"));
+                basicInfo.setApplicationVersion(appNameResultSet.getString(ApplicationTableColumns.APP_VERSION));
                 appInfo.add(basicInfo);
             }
         } catch (SQLException e) {
@@ -3833,9 +4186,17 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         return getApplicationBasicInfo(offset, limit);
     }
 
+    @Deprecated
     @Override
-    public ApplicationBasicInfo[] getApplicationBasicInfo(int offset,
-                                                          int limit) throws IdentityApplicationManagementException {
+    public ApplicationBasicInfo[] getApplicationBasicInfo(int offset, int limit)
+            throws IdentityApplicationManagementException {
+
+        return getApplicationBasicInfo(offset, limit, false);
+    }
+
+    @Override
+    public ApplicationBasicInfo[] getApplicationBasicInfo(int offset, int limit, Boolean excludeSystemPortals)
+            throws IdentityApplicationManagementException {
 
         validateAttributesForPagination(offset, limit);
 
@@ -3846,33 +4207,40 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         ResultSet appNameResultSet = null;
         String sqlQuery;
         ArrayList<ApplicationBasicInfo> appInfo = new ArrayList<ApplicationBasicInfo>();
+        String excludeSystemPortalsQueryString = populateSystemPortalsExcludeQuery(excludeSystemPortals, false);
 
         try {
             String databaseProductName = connection.getMetaData().getDatabaseProductName();
             if (databaseProductName.contains("MySQL")
                     || databaseProductName.contains("MariaDB")
                     || databaseProductName.contains("H2")) {
-                sqlQuery = ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_MYSQL;
+                sqlQuery = String.format(ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_MYSQL,
+                        excludeSystemPortalsQueryString);
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
                 populateListAppNamesQueryValues(tenantID, offset, limit, getAppNamesStmt);
             } else if (databaseProductName.contains("Oracle")) {
-                sqlQuery = ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_ORACLE;
+                sqlQuery = String.format(ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_ORACLE,
+                        excludeSystemPortalsQueryString);
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
                 populateListAppNamesQueryValues(tenantID, offset + limit, offset, getAppNamesStmt);
             } else if (databaseProductName.contains("Microsoft")) {
-                sqlQuery = ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_MSSQL;
+                sqlQuery = String.format(ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_MSSQL,
+                        excludeSystemPortalsQueryString);
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
                 populateListAppNamesQueryValues(tenantID, offset, limit, getAppNamesStmt);
             } else if (databaseProductName.contains("PostgreSQL")) {
-                sqlQuery = ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_POSTGRESQL;
+                sqlQuery = String.format(ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_POSTGRESQL,
+                        excludeSystemPortalsQueryString);
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
                 populateListAppNamesQueryValues(tenantID, limit, offset, getAppNamesStmt);
             } else if (databaseProductName.contains("DB2")) {
-                sqlQuery = ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_DB2SQL;
+                sqlQuery = String.format(ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_DB2SQL,
+                        excludeSystemPortalsQueryString);
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
                 populateListAppNamesQueryValues(tenantID, offset, offset + limit, getAppNamesStmt);
             } else if (databaseProductName.contains("INFORMIX")) {
-                sqlQuery = ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_INFORMIX;
+                sqlQuery = String.format(ApplicationMgtDBQueries.LOAD_APP_NAMES_BY_TENANT_INFORMIX,
+                        excludeSystemPortalsQueryString);
                 getAppNamesStmt = connection.prepareStatement(sqlQuery);
                 getAppNamesStmt.setInt(1, offset);
                 getAppNamesStmt.setInt(2, limit);
@@ -3906,14 +4274,16 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
     /**
      * Set values to the prepare statement for listing application names
+     *
      * @param start
      * @param end
      * @param tenantID
      * @param getAppNamesStmt
      * @throws SQLException
      */
-    private void populateListAppNamesQueryValues(int tenantID, int start, int end,  PreparedStatement
+    private void populateListAppNamesQueryValues(int tenantID, int start, int end, PreparedStatement
             getAppNamesStmt) throws SQLException {
+
         getAppNamesStmt.setInt(1, tenantID);
         getAppNamesStmt.setString(2, LOCAL_SP);
         getAppNamesStmt.setInt(3, start);
@@ -3939,7 +4309,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         try {
 
             // Delete the application certificate if there is any.
-            deleteCertificate(connection, appName, tenantID);
+            deleteCertificate(appName, tenantID);
 
             // First, delete all the clients of the application
             int applicationID = getApplicationIDByName(appName, tenantID, connection);
@@ -4073,9 +4443,6 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         String auditData = "\"" + "Tenant Id" + "\" : \"" + tenantId + "\"";
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(true)) {
-
-            // Delete the application certificates of the tenant.
-            deleteCertificatesByTenantId(connection, tenantId);
 
             try (PreparedStatement deleteClientPrepStmt = connection
                     .prepareStatement(ApplicationMgtDBQueries.REMOVE_APPS_FROM_APPMGT_APP_BY_TENANT_ID)) {
@@ -4307,15 +4674,14 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
     /**
      * Delete the certificate of the given application if there is one.
      *
-     * @param connection
-     * @param appName
-     * @param tenantID
-     * @throws UserStoreException
-     * @throws IdentityApplicationManagementException
-     * @throws SQLException
+     * @param appName  Application name.
+     * @param tenantID Tenant ID.
+     * @throws UserStoreException                     If an error occurred while resolving tenant.
+     * @throws IdentityApplicationManagementException If an error occurred while retrieving the application or
+     *                                                deleting the certificate.
      */
-    private void deleteCertificate(Connection connection, String appName, int tenantID)
-            throws UserStoreException, IdentityApplicationManagementException, SQLException {
+    private void deleteCertificate(String appName, int tenantID) throws UserStoreException,
+            IdentityApplicationManagementException {
 
         String tenantDomain = MultitenantConstants.SUPER_TENANT_DOMAIN_NAME;
 
@@ -4329,50 +4695,24 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         String certificateReferenceID = getCertificateReferenceID(application.getSpProperties());
 
         if (certificateReferenceID != null) {
-            deleteCertificate(connection, Integer.parseInt(certificateReferenceID));
+            deleteCertificate(Integer.parseInt(certificateReferenceID), IdentityTenantUtil.getTenantDomain(tenantID));
         }
     }
 
     /**
      * Deletes the certificate for given ID from the database.
      *
-     * @param connection
-     * @param id
+     * @param id Certificate ID.
+     * @param tenantDomain Tenant domain.
+     * @throws IdentityApplicationManagementException If an error occurred while deleting the certificate.
      */
-    private void deleteCertificate(Connection connection, int id) throws SQLException {
-
-        PreparedStatement statementToRemoveCertificate = null;
-        try {
-
-            statementToRemoveCertificate = connection.prepareStatement(ApplicationMgtDBQueries.REMOVE_CERTIFICATE);
-            statementToRemoveCertificate.setInt(1, id);
-            statementToRemoveCertificate.execute();
-        } finally {
-            IdentityApplicationManagementUtil.closeStatement(statementToRemoveCertificate);
-        }
-    }
-
-    /**
-     * Deletes all certificates of a given tenant id from the database.
-     *
-     * @param connection The database connection.
-     * @param tenantId The id of the tenant.
-     */
-    private void deleteCertificatesByTenantId(Connection connection, int tenantId) throws SQLException {
-
-        if (log.isDebugEnabled()) {
-            log.debug("Deleting all application certificates of tenant: " + tenantId);
-        }
-
-        PreparedStatement deleteCertificatesStmt = null;
+    private void deleteCertificate(int id, String tenantDomain) throws IdentityApplicationManagementException {
 
         try {
-            deleteCertificatesStmt = connection.prepareStatement(
-                    ApplicationMgtDBQueries.REMOVE_CERTIFICATES_BY_TENANT_ID);
-            deleteCertificatesStmt.setInt(1, tenantId);
-            deleteCertificatesStmt.execute();
-        } finally {
-            IdentityApplicationManagementUtil.closeStatement(deleteCertificatesStmt);
+            ApplicationManagementServiceComponentHolder.getInstance().getApplicationCertificateMgtService()
+                    .deleteCertificate(id, tenantDomain);
+        } catch (CertificateMgtException e) {
+            throw new IdentityApplicationManagementException("Error while deleting certificate", e);
         }
     }
 
@@ -4665,6 +5005,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         }
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
+            // Todo: change the query to something basic without getting all info.
             try (PreparedStatement checkAppExistence = connection
                     .prepareStatement(ApplicationMgtDBQueries.LOAD_BASIC_APP_INFO_BY_APP_NAME)) {
                 checkAppExistence.setString(1, serviceProviderName);
@@ -4691,8 +5032,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
      * @return
      * @throws SQLException
      */
-    private int getAuthentictorID(Connection conn, int tenantId, String idpName,
-                                  String authenticatorName) throws SQLException {
+    private int getAuthenticatorID(Connection conn, int tenantId, String idpName,
+                                   String authenticatorName) throws SQLException {
 
         if (idpName == null || idpName.isEmpty()) {
             return -1;
@@ -4746,6 +5087,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
                 returnData.put(ApplicationConstants.IDP_AUTHENTICATOR_NAME, rs.getString(2));
                 returnData
                         .put(ApplicationConstants.IDP_AUTHENTICATOR_DISPLAY_NAME, rs.getString(3));
+                returnData.put(ApplicationConstants.IDP_AUTHENTICATOR_DEFINED_BY_TYPE, rs.getString(4));
             }
         } finally {
             IdentityApplicationManagementUtil.closeStatement(prepStmt);
@@ -4762,17 +5104,16 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
      * @return
      * @throws SQLException
      */
-    private int addAuthenticator(Connection conn, int tenantId, String idpName,
-                                 String authenticatorName, String authenticatorDispalyName) throws SQLException {
+    private int addAuthenticator(Connection conn, int tenantId, String idpName, String authenticatorName,
+                                 String authenticatorDispalyName, String definedByType) throws SQLException {
 
         int authenticatorId = -1;
         PreparedStatement prepStmt = null;
         ResultSet rs = null;
-        // TENANT_ID, IDP_ID, NAME,IS_ENABLED, DISPLAY_NAME
         String sqlStmt = ApplicationMgtDBQueries.STORE_LOCAL_AUTHENTICATOR;
         try {
             String dbProductName = conn.getMetaData().getDatabaseProductName();
-            prepStmt = conn.prepareStatement(sqlStmt, new String[]{
+            prepStmt = conn.prepareStatement(sqlStmt, new String[] {
                     DBUtils.getConvertedAutoGeneratedColumnName(dbProductName, "ID")});
             prepStmt.setInt(1, tenantId);
             prepStmt.setString(2, idpName);
@@ -4780,6 +5121,9 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             prepStmt.setString(4, authenticatorName);
             prepStmt.setString(5, "1");
             prepStmt.setString(6, authenticatorDispalyName);
+            prepStmt.setString(7, definedByType);
+            // By default, unless specified, the authentication type is 'IDENTIFICATION' for local authenticators.
+            prepStmt.setString(8, AuthenticationType.IDENTIFICATION.toString());
             prepStmt.execute();
             rs = prepStmt.getGeneratedKeys();
             if (rs.next()) {
@@ -4997,39 +5341,6 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         }
     }
 
-    /**
-     * Get string from inputStream of a blob
-     *
-     * @param is input stream
-     * @return
-     * @throws IOException
-     */
-    private String getBlobValue(InputStream is) throws IOException {
-
-        if (is != null) {
-            BufferedReader br = null;
-            StringBuilder sb = new StringBuilder();
-            String line;
-            try {
-                br = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8));
-                while ((line = br.readLine()) != null) {
-                    sb.append(line);
-                }
-            } finally {
-                if (br != null) {
-                    try {
-                        br.close();
-                    } catch (IOException e) {
-                        log.error("Error in retrieving the Blob value", e);
-                    }
-                }
-            }
-
-            return sb.toString();
-        }
-        return null;
-    }
-
     private void updateConfigurationsAsServiceProperties(ServiceProvider sp)
             throws IdentityApplicationManagementException {
 
@@ -5061,11 +5372,17 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         ServiceProviderProperty templateIdProperty = buildTemplateIdProperty(sp);
         spPropertyMap.put(templateIdProperty.getName(), templateIdProperty);
 
+        ServiceProviderProperty templateVersionProperty = buildTemplateVersionProperty(sp);
+        spPropertyMap.put(templateVersionProperty.getName(), templateVersionProperty);
+
         ServiceProviderProperty isManagementAppProperty = buildIsManagementAppProperty(sp);
         spPropertyMap.put(isManagementAppProperty.getName(), isManagementAppProperty);
 
         ServiceProviderProperty isB2BSSAppProperty = buildIsB2BSSAppProperty(sp);
         spPropertyMap.put(isB2BSSAppProperty.getName(), isB2BSSAppProperty);
+
+        ServiceProviderProperty isApplicationEnabledProperty = buildIsApplicationEnabledProperty(sp);
+        spPropertyMap.put(isApplicationEnabledProperty.getName(), isApplicationEnabledProperty);
 
         ServiceProviderProperty allowedRoleAudienceProperty = buildAllowedRoleAudienceProperty(sp);
         spPropertyMap.put(allowedRoleAudienceProperty.getName(), allowedRoleAudienceProperty);
@@ -5092,6 +5409,11 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             storeAndroidAttestationServiceCredentialAsSecret(sp);
         }
 
+        // Store the trusted app consent granted status only if trusted app consent required property is enabled.
+        if (ApplicationMgtUtil.isTrustedAppConsentRequired() && sp.getTrustedAppMetadata() != null) {
+            ServiceProviderProperty trustedAppConsentProperty = buildTrustedAppConsentProperty(sp);
+            spPropertyMap.put(trustedAppConsentProperty.getName(), trustedAppConsentProperty);
+        }
         sp.setSpProperties(spPropertyMap.values().toArray(new ServiceProviderProperty[0]));
     }
 
@@ -5198,13 +5520,26 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         return isB2BSSAppProperty;
     }
 
+    private ServiceProviderProperty buildIsApplicationEnabledProperty(ServiceProvider sp) {
+
+        ServiceProviderProperty isAppEnabledProperty = new ServiceProviderProperty();
+        isAppEnabledProperty.setName(IS_APPLICATION_ENABLED_PROPERTY_NAME);
+        isAppEnabledProperty.setDisplayName(IS_APPLICATION_ENABLED_DISPLAY_NAME);
+        isAppEnabledProperty.setValue(String.valueOf(sp.isApplicationEnabled()));
+        return isAppEnabledProperty;
+    }
+
     private ServiceProviderProperty buildAllowedRoleAudienceProperty(ServiceProvider serviceProvider) {
 
         ServiceProviderProperty allowedRoleAudienceProperty = new ServiceProviderProperty();
         allowedRoleAudienceProperty.setName(ALLOWED_ROLE_AUDIENCE_PROPERTY_NAME);
         AssociatedRolesConfig associatedRolesConfig = serviceProvider.getAssociatedRolesConfig();
         if (associatedRolesConfig == null) {
-            allowedRoleAudienceProperty.setValue(RoleConstants.ORGANIZATION);
+            if (CarbonConstants.ENABLE_LEGACY_AUTHZ_RUNTIME) {
+                allowedRoleAudienceProperty.setValue(RoleConstants.ORGANIZATION);
+            } else {
+                allowedRoleAudienceProperty.setValue(RoleConstants.APPLICATION);
+            }
             return allowedRoleAudienceProperty;
         }
         String allowedAudience = StringUtils.isNotBlank(associatedRolesConfig.getAllowedAudience()) ?
@@ -5212,7 +5547,6 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         allowedRoleAudienceProperty.setValue(allowedAudience);
         return allowedRoleAudienceProperty;
     }
-
 
     private ServiceProviderProperty buildTemplateIdProperty(ServiceProvider sp) {
 
@@ -5222,6 +5556,22 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         templateIdProperty
                 .setValue(StringUtils.isNotBlank(sp.getTemplateId()) ? sp.getTemplateId() : StringUtils.EMPTY);
         return templateIdProperty;
+    }
+
+    /**
+     * Build the template version service provider property from the service provider object.
+     *
+     * @param sp Service provider instance.
+     * @return Template version as a service provider property.
+     */
+    private ServiceProviderProperty buildTemplateVersionProperty(ServiceProvider sp) {
+
+        ServiceProviderProperty templateVersionProperty = new ServiceProviderProperty();
+        templateVersionProperty.setName(TEMPLATE_VERSION_SP_PROPERTY_NAME);
+        templateVersionProperty.setDisplayName(TEMPLATE_VERSION_SP_PROPERTY_DISPLAY_NAME);
+        templateVersionProperty.setValue(
+                StringUtils.isNotBlank(sp.getTemplateVersion()) ? sp.getTemplateVersion() : StringUtils.EMPTY);
+        return templateVersionProperty;
     }
 
     private ServiceProviderProperty buildJwksProperty(ServiceProvider sp) {
@@ -5273,6 +5623,16 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
         property.setValue(String.valueOf(sp.getLocalAndOutBoundAuthenticationConfig().isUseUserstoreDomainInRoles()));
         return property;
+    }
+
+    private ServiceProviderProperty buildTrustedAppConsentProperty(ServiceProvider sp) {
+
+        ServiceProviderProperty trustedAppConsentProperty = new ServiceProviderProperty();
+        trustedAppConsentProperty.setName(TRUSTED_APP_CONSENT_GRANTED_SP_PROPERTY_NAME);
+        trustedAppConsentProperty.setDisplayName(TRUSTED_APP_CONSENT_GRANTED_SP_PROPERTY_DISPLAY_NAME);
+
+        trustedAppConsentProperty.setValue(String.valueOf(sp.getTrustedAppMetadata().getIsConsentGranted()));
+        return trustedAppConsentProperty;
     }
 
     private void loadApplicationPermissions(String serviceProviderName, ServiceProvider serviceProvider)
@@ -5402,6 +5762,37 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         return applicationBasicInfo;
     }
 
+    @Override
+    public String getApplicationUUIDByName(String name, String tenantDomain)
+            throws IdentityApplicationManagementException {
+
+        if (log.isDebugEnabled()) {
+            log.debug("Getting application UUID for name: " + name
+                    + " in tenantDomain: " + tenantDomain);
+        }
+
+        String applicationUuid = null;
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
+            try (NamedPreparedStatement statement =
+                         new NamedPreparedStatement(connection,
+                                 ApplicationMgtDBQueries.GET_APP_UUID_BY_TENANT_AND_NAME)) {
+                statement.setInt(ApplicationTableColumns.TENANT_ID, IdentityTenantUtil.getTenantId(tenantDomain));
+                statement.setString(ApplicationTableColumns.APP_NAME, name);
+
+                try (ResultSet resultSet = statement.executeQuery()) {
+                    while (resultSet.next()) {
+                        applicationUuid = resultSet.getString(ApplicationTableColumns.UUID);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            String message = "Error while getting application uuid for name: %s in " +
+                    "tenantDomain: %s";
+            throw new IdentityApplicationManagementException(String.format(message, name, tenantDomain), e);
+        }
+        return applicationUuid;
+    }
+
     public String addApplication(ServiceProvider application,
                                  String tenantDomain) throws IdentityApplicationManagementException {
 
@@ -5425,10 +5816,13 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             addApplicationConfigurations(connection, application, tenantDomain);
             IdentityDatabaseUtil.commitTransaction(connection);
             return resourceId;
+        } catch (IdentityApplicationManagementClientException e) {
+            rollbackAddApplicationTransaction(connection, application, tenantDomain);
+            throw e;
         } catch (SQLException | UserStoreException | IdentityApplicationManagementException e) {
             log.error("Error while creating the application with name: " + application.getApplicationName()
                     + " in tenantDomain: " + tenantDomain + ". Rolling back created application information.");
-            IdentityDatabaseUtil.rollbackTransaction(connection);
+            rollbackAddApplicationTransaction(connection, application, tenantDomain);
             if (isApplicationConflict(e)) {
                 throw new IdentityApplicationManagementClientException(APPLICATION_ALREADY_EXISTS.getCode(),
                         "Application already exists with name: " + application.getApplicationName()
@@ -5452,6 +5846,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             updatedApp.setApplicationID(appIdUsingResourceId);
 
             updateApplication(updatedApp, tenantDomain);
+        } catch (IdentityApplicationManagementClientException e) {
+            throw e;
         } catch (IdentityApplicationManagementException ex) {
             // Send error code.
             throw new IdentityApplicationManagementServerException("Error while updating application with resourceId: "
@@ -5495,7 +5891,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
 
             if (application != null) {
                 // Delete the application certificate if there is any
-                deleteApplicationCertificate(connection, application);
+                deleteApplicationCertificate(application, tenantDomain);
                 // Delete android attestation service credentials if there is any
                 deleteAndroidAttestationCredentials(application);
 
@@ -5752,6 +6148,63 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
     }
 
     @Override
+    public String getOwnerOrgId(String sharedAppId) throws IdentityApplicationManagementServerException {
+
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(false);
+             NamedPreparedStatement namedPreparedStatement = new NamedPreparedStatement(connection,
+                     ApplicationMgtDBQueries.GET_OWNER_ORG_ID_BY_SHARED_APP_ID)) {
+            namedPreparedStatement.setString(DB_SCHEMA_COLUMN_NAME_SHARED_APP_ID, sharedAppId);
+            try (ResultSet resultSet = namedPreparedStatement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getString(DB_SCHEMA_COLUMN_NAME_OWNER_ORG_ID);
+                }
+            }
+            return null;
+        } catch (SQLException e) {
+            throw new IdentityApplicationManagementServerException(
+                    String.format("Error while getting owner organization id for the shared application with id: %s",
+                            sharedAppId), e);
+        }
+    }
+
+    @Override
+    public Map<String, String> getSharedApplicationIds(String mainAppId, String ownerOrgId, List<String> sharedOrgIds)
+            throws IdentityApplicationManagementServerException {
+
+        if (CollectionUtils.isEmpty(sharedOrgIds)) {
+            return Collections.emptyMap();
+        }
+
+        Map<String, String> sharedAppIds = new HashMap<>();
+
+        String placeholders = IntStream.range(0, sharedOrgIds.size())
+                .mapToObj(i -> ":" + SHARED_ORG_ID_PLACEHOLDER_PREFIX + i + ";")
+                .collect(Collectors.joining(", "));
+        String sqlStmt = GET_FILTERED_SHARED_APPLICATIONS.replace(SHARED_ORG_ID_LIST_PLACEHOLDER, placeholders);
+
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(false);
+             NamedPreparedStatement namedPreparedStatement = new NamedPreparedStatement(connection, sqlStmt)) {
+            namedPreparedStatement.setString(DB_SCHEMA_COLUMN_NAME_MAIN_APP_ID, mainAppId);
+            namedPreparedStatement.setString(DB_SCHEMA_COLUMN_NAME_OWNER_ORG_ID, ownerOrgId);
+            for (int i = 0; i < sharedOrgIds.size(); i++) {
+                namedPreparedStatement.setString(SHARED_ORG_ID_PLACEHOLDER_PREFIX + i, sharedOrgIds.get(i));
+            }
+
+            try (ResultSet resultSet = namedPreparedStatement.executeQuery()) {
+                while (resultSet.next()) {
+                    sharedAppIds.put(resultSet.getString(DB_SCHEMA_COLUMN_NAME_SHARED_ORG_ID),
+                            resultSet.getString(DB_SCHEMA_COLUMN_NAME_SHARED_APP_ID));
+                }
+                return sharedAppIds;
+            }
+        } catch (SQLException e) {
+            throw new IdentityApplicationManagementServerException(
+                    String.format("Error while resolving shared applications for the main application with id: %s in " +
+                            "organization: %s", mainAppId, ownerOrgId), e);
+        }
+    }
+
+    @Override
     public int getTenantIdByApp(String applicationId) throws IdentityApplicationManagementServerException {
 
         try (Connection connection = IdentityDatabaseUtil.getDBConnection(false)) {
@@ -5942,6 +6395,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         basicInfo.setApplicationId(appNameResultSet.getInt(ApplicationTableColumns.ID));
         basicInfo.setApplicationName(appNameResultSet.getString(ApplicationTableColumns.APP_NAME));
         basicInfo.setDescription(appNameResultSet.getString(ApplicationTableColumns.DESCRIPTION));
+        basicInfo.setUuid(appNameResultSet.getString(ApplicationTableColumns.UUID));
+        basicInfo.setApplicationVersion(appNameResultSet.getString(ApplicationTableColumns.APP_VERSION));
 
         basicInfo.setApplicationResourceId(appNameResultSet.getString(ApplicationTableColumns.UUID));
         basicInfo.setImageUrl(appNameResultSet.getString(ApplicationTableColumns.IMAGE_URL));
@@ -5950,7 +6405,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             basicInfo.setAccessUrl(appNameResultSet.getString(ApplicationTableColumns.ACCESS_URL));
             if (ApplicationMgtUtil.isConsoleOrMyAccount(basicInfo.getApplicationName())) {
                 basicInfo.setAccessUrl(ApplicationMgtUtil.resolveOriginUrlFromPlaceholders(
-                        appNameResultSet.getString(ApplicationTableColumns.ACCESS_URL)));
+                        appNameResultSet.getString(ApplicationTableColumns.ACCESS_URL),
+                        basicInfo.getApplicationName()));
             }
         } catch (URLBuilderException e) {
             throw new IdentityApplicationManagementException(
@@ -5999,6 +6455,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         basicInfo.setApplicationId(appNameResultSet.getInt(ApplicationTableColumns.ID));
         basicInfo.setApplicationName(appNameResultSet.getString(ApplicationTableColumns.APP_NAME));
         basicInfo.setDescription(appNameResultSet.getString(ApplicationTableColumns.DESCRIPTION));
+        basicInfo.setApplicationVersion(appNameResultSet.getString(ApplicationTableColumns.APP_VERSION));
 
         basicInfo.setApplicationResourceId(appNameResultSet.getString(ApplicationTableColumns.UUID));
         basicInfo.setImageUrl(appNameResultSet.getString(ApplicationTableColumns.IMAGE_URL));
@@ -6007,7 +6464,8 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
             basicInfo.setAccessUrl(appNameResultSet.getString(ApplicationTableColumns.ACCESS_URL));
             if (ApplicationMgtUtil.isConsoleOrMyAccount(basicInfo.getApplicationName())) {
                 basicInfo.setAccessUrl(ApplicationMgtUtil.resolveOriginUrlFromPlaceholders(
-                        appNameResultSet.getString(ApplicationTableColumns.ACCESS_URL)));
+                        appNameResultSet.getString(ApplicationTableColumns.ACCESS_URL),
+                        basicInfo.getApplicationName()));
             }
         } catch (URLBuilderException e) {
             throw new IdentityApplicationManagementException(
@@ -6095,7 +6553,7 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
     /**
      * Returns the internal application id for a given resourceId.
      *
-     * @param resourceId        UUID of the application.
+     * @param resourceId UUID of the application.
      * @return applicationId    ID of the application.
      * @throws IdentityApplicationManagementException If an error occurred in retrieving application ID.
      */
@@ -6119,17 +6577,18 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         return applicationId;
     }
 
-    private void deleteApplicationCertificate(Connection connection, ServiceProvider application) throws SQLException {
+    private void deleteApplicationCertificate(ServiceProvider application, String tenantDomain)
+            throws IdentityApplicationManagementException {
 
         String certificateReferenceID = getCertificateReferenceID(application.getSpProperties());
         if (certificateReferenceID != null) {
-            deleteCertificate(connection, Integer.parseInt(certificateReferenceID));
+            deleteCertificate(Integer.parseInt(certificateReferenceID), tenantDomain);
         }
     }
 
     private String generateApplicationResourceId(ServiceProvider serviceProvider) {
 
-        return UUID.randomUUID().toString();
+        return java.util.UUID.randomUUID().toString();
     }
 
     /**
@@ -6208,5 +6667,104 @@ public class ApplicationDAOImpl extends AbstractApplicationDAOImpl implements Pa
         loggedInUser = UserCoreUtil.addTenantDomainToEntry(loggedInUser, tenantDomain);
 
         AUDIT_LOG.info(String.format(AUDIT_MESSAGE, loggedInUser, action, data, result));
+    }
+
+    @Override
+    public List<TrustedApp> getTrustedApps(PlatformType platformType) throws IdentityApplicationManagementException {
+
+        if (log.isDebugEnabled()) {
+            log.debug("Getting trusted app details for platform type: " + platformType);
+        }
+
+        List<TrustedApp> trustedApps = new ArrayList<>();
+
+        try (Connection connection = IdentityDatabaseUtil.getDBConnection(false);
+             PreparedStatement statement = connection.prepareStatement(
+                     ApplicationMgtDBQueries.LOAD_TRUSTED_APPS_BY_PLATFORM_TYPE)) {
+            statement.setString(1, platformType.toString());
+            statement.execute();
+
+            try (ResultSet resultSet = statement.executeQuery()) {
+                while (resultSet.next()) {
+                    TrustedApp app = new TrustedApp();
+                    app.setPlatformType(platformType);
+                    app.setAppIdentifier(resultSet.getString(1));
+                    app.setThumbprints(resultSet.getString(2) != null ?
+                            resultSet.getString(2).split(ATTRIBUTE_SEPARATOR) : new String[0]);
+                    app.setIsFIDOTrusted(resultSet.getBoolean(3));
+                    trustedApps.add(app);
+                }
+            }
+        } catch (SQLException e) {
+            String msg = "Error occurred while retrieving trusted app list for %s platform.";
+            throw new IdentityApplicationManagementException(String.format(msg, platformType), e);
+        }
+        return trustedApps;
+    }
+
+    @Override
+    public String[] getSPsAssociatedWithFederatedIDPAuthenticator(String idpName,
+                                                                  String defaultAuthenticatorName,
+                                                                  String tenantDomain)
+            throws IdentityApplicationManagementException {
+
+        Connection dbConnection = IdentityDatabaseUtil.getDBConnection(false);
+        PreparedStatement prepStmt = null;
+        ResultSet resultSet = null;
+        int tenantId = IdentityTenantUtil.getTenantId(tenantDomain);
+        List<String> spResourceIDs = new ArrayList<>();
+
+        try {
+            int defaultAuthenticatorId =
+                    getAuthenticatorID(dbConnection, tenantId, idpName, defaultAuthenticatorName);
+
+            prepStmt = dbConnection.prepareStatement(
+                    ApplicationMgtDBQueries.GET_SP_UUIDS_ASSOCIATED_AUTH_FLOW_AUTHENTICATOR);
+            prepStmt.setInt(1, defaultAuthenticatorId);
+            prepStmt.setString(2, ApplicationConstants.AUTH_TYPE_FEDERATED);
+            resultSet = prepStmt.executeQuery();
+            while (resultSet.next()) {
+                spResourceIDs.add(resultSet.getString(ApplicationTableColumns.UUID));
+            }
+
+            return spResourceIDs.toArray(new String[0]);
+        } catch (SQLException e) {
+            throw new IdentityApplicationManagementException("Error occurred while getting SP resource IDs " +
+                    "associated with the default authenticator: " + defaultAuthenticatorName +
+                    " of the federated IDP: " + idpName, e);
+        } finally {
+            IdentityDatabaseUtil.closeAllConnections(dbConnection, resultSet, prepStmt);
+        }
+    }
+
+    @Override
+    public void updateApplicationLocalAndOutboundAuthConfig(ServiceProvider serviceProvider, String tenantDomain)
+            throws IdentityApplicationManagementException {
+
+        int applicationId = serviceProvider.getApplicationID();
+        Connection connection = IdentityDatabaseUtil.getDBConnection(true);
+        try {
+            deleteLocalAndOutboundAuthenticationConfiguration(applicationId, connection);
+            updateLocalAndOutboundAuthenticationConfiguration(applicationId,
+                    serviceProvider.getLocalAndOutBoundAuthenticationConfig(), connection);
+            IdentityDatabaseUtil.commitTransaction(connection);
+        } catch (SQLException e) {
+            IdentityDatabaseUtil.rollbackTransaction(connection);
+            throw new IdentityApplicationManagementException(
+                    "Failed to update local and outbound config of application: " + applicationId, e);
+        } finally {
+            IdentityApplicationManagementUtil.closeConnection(connection);
+        }
+    }
+          
+    private void rollbackAddApplicationTransaction(Connection connection, ServiceProvider application,
+                                                   String tenantDomain) throws IdentityApplicationManagementException {
+
+        try {
+            IdentityDatabaseUtil.rollbackTransaction(connection);
+            deleteApplicationCertificate(application, tenantDomain);
+        } catch (Exception e) {
+            throw new IdentityApplicationManagementException("Error while rolling back the transaction.", e);
+        }
     }
 }

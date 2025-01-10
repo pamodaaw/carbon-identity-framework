@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2021, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2021-2024, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -20,6 +20,7 @@ package org.wso2.carbon.identity.central.log.mgt.utils;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
@@ -29,6 +30,7 @@ import org.slf4j.MDC;
 import org.wso2.carbon.CarbonConstants;
 import org.wso2.carbon.context.CarbonContext;
 import org.wso2.carbon.identity.central.log.mgt.internal.CentralLogMgtServiceComponentHolder;
+import org.wso2.carbon.identity.core.util.IdentityConfigParser;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.event.IdentityEventException;
@@ -43,11 +45,16 @@ import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.wso2.carbon.identity.central.log.mgt.utils.LogConstants.ApplicationManagement.CONSOLE_APP_NAME;
+import static org.wso2.carbon.identity.central.log.mgt.utils.LogConstants.ApplicationManagement.CONSOLE_CLIENT_ID;
 import static org.wso2.carbon.identity.central.log.mgt.utils.LogConstants.ENABLE_LOG_MASKING;
+import static org.wso2.carbon.identity.central.log.mgt.utils.LogConstants.LOGGABLE_USER_CLAIMS;
 import static org.wso2.carbon.identity.event.IdentityEventConstants.Event.PUBLISH_AUDIT_LOG;
 import static org.wso2.carbon.identity.event.IdentityEventConstants.Event.PUBLISH_DIAGNOSTIC_LOG;
 
@@ -73,7 +80,7 @@ public class LoggerUtils {
      * Defines the Targets of the logs.
      */
     public enum Target {
-        User, Role, Group, Application
+        User, Role, Group, Application, Action
     }
 
     /**
@@ -108,7 +115,7 @@ public class LoggerUtils {
     /**
      * This method is used to trigger audit log event whence the new audit log publishing is enabled by default.
      *
-     * @param auditLogBuilder  Audit log builder
+     * @param auditLogBuilder Audit log builder
      */
     public static void triggerAuditLogEvent(AuditLog.AuditLogBuilder auditLogBuilder) {
 
@@ -164,6 +171,11 @@ public class LoggerUtils {
         try {
             Map<String, Object> diagnosticLogProperties = new HashMap<>();
             DiagnosticLog diagnosticLog = diagnosticLogBuilder.build();
+            /* As the Console application is used to access the identity server resources, the diagnostic logs are not
+            required to be emitted. */
+            if (isConsoleApp(diagnosticLog)) {
+                return;
+            }
             IdentityEventService eventMgtService =
                     CentralLogMgtServiceComponentHolder.getInstance().getIdentityEventService();
             diagnosticLogProperties.put(CarbonConstants.LogEventConstants.DIAGNOSTIC_LOG, diagnosticLog);
@@ -257,9 +269,10 @@ public class LoggerUtils {
     public static Map<String, String> getMaskedClaimsMap(Map<String, String> claims) {
 
         Map<String, String> maskedClaims = new HashMap<>();
+        List<String> loggableClaims = getLoggableClaimURIs();
         if (MapUtils.isNotEmpty(claims)) {
             for (Map.Entry<String, String> entry : claims.entrySet()) {
-                if (LogConstants.USER_ID_CLAIM_URI.equals(entry.getKey())) {
+                if (LogConstants.USER_ID_CLAIM_URI.equals(entry.getKey()) || loggableClaims.contains(entry.getKey())) {
                     maskedClaims.put(entry.getKey(), entry.getValue());
                 } else {
                     maskedClaims.put(entry.getKey(), getMaskedContent(entry.getValue()));
@@ -278,7 +291,8 @@ public class LoggerUtils {
      */
     public static String getMaskedClaimValue(String claimURI, String claimValue) {
 
-        if (LogConstants.USER_ID_CLAIM_URI.equals(claimURI)) {
+        List<String> loggableClaims = getLoggableClaimURIs();
+        if (LogConstants.USER_ID_CLAIM_URI.equals(claimURI) || loggableClaims.contains(claimURI)) {
             return claimValue;
         }
         return getMaskedContent(claimValue);
@@ -349,5 +363,62 @@ public class LoggerUtils {
             return LoggerUtils.Initiator.System.name();
         }
         return LoggerUtils.Initiator.User.toString();
+    }
+
+    /**
+     * Get the loggable claim uris.
+     *
+     * @return list of loggable claim uris.
+     */
+    public static List<String> getLoggableClaimURIs() {
+
+        Object configValue = IdentityConfigParser.getInstance().getConfiguration().get(LOGGABLE_USER_CLAIMS);
+        List<String> claimsFilters = new ArrayList<>();
+        if (configValue instanceof ArrayList) {
+            claimsFilters = (ArrayList) configValue;
+        } else if (configValue instanceof String) {
+            claimsFilters.add((String) configValue);
+        }
+        if (!claimsFilters.isEmpty()) {
+            // Strip leading and trailing whitespace from each string in the list.
+            List<String> strippedClaims = new ArrayList<>();
+            for (String claim : claimsFilters) {
+                strippedClaims.add(StringUtils.stripToNull(claim));
+            }
+            return strippedClaims;
+        }
+        return new ArrayList<>();
+    }
+
+    private static boolean isConsoleApp(DiagnosticLog diagnosticLog) {
+
+        if (diagnosticLog.getInput() == null) {
+            return false;
+        }
+        String clientID;
+        List<?> clientIDs;
+        Object clientIDInputObj = diagnosticLog.getInput().get(LogConstants.InputKeys.CLIENT_ID);
+        if (clientIDInputObj instanceof String) {
+            return CONSOLE_CLIENT_ID.equals(clientIDInputObj);
+        }
+        Object clientNameInputObj = diagnosticLog.getInput().get(LogConstants.InputKeys.APPLICATION_NAME);
+        if (clientNameInputObj instanceof String) {
+            return CONSOLE_APP_NAME.equals(clientNameInputObj);
+        }
+        if (clientIDInputObj instanceof List<?>) {
+            clientIDs = (List<?>) diagnosticLog.getInput().get(LogConstants.InputKeys.CLIENT_ID);
+            if (CollectionUtils.isNotEmpty(clientIDs)) {
+                clientID = (String) clientIDs.get(0);
+                return CONSOLE_CLIENT_ID.equals(clientID);
+            }
+        }
+        if (diagnosticLog.getInput().get("client_id") instanceof List<?>) {
+            clientIDs = (List<?>) diagnosticLog.getInput().get("client_id");
+            if (CollectionUtils.isNotEmpty(clientIDs)) {
+                clientID = (String) clientIDs.get(0);
+                return CONSOLE_CLIENT_ID.equals(clientID);
+            }
+        }
+        return false;
     }
 }

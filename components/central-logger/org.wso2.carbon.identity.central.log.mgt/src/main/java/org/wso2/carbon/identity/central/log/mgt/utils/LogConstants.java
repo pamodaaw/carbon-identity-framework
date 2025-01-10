@@ -35,6 +35,8 @@ public class LogConstants {
     public static final String MASKING_CHARACTER = "*";
     public static final String ENABLE_LOG_MASKING = "MaskingLogs.Enabled";
     public static final Pattern LOG_MASKING_PATTERN = Pattern.compile("(?<=.).(?=.)");
+    public static final String LOGGABLE_USER_CLAIMS = "LoggableUserClaims.LoggableUserClaim";
+
 
     /**
      * Define common and reusable Input keys for diagnostic logs.
@@ -75,6 +77,8 @@ public class LogConstants {
         public static final String DELETE_OAUTH_APPLICATION_ACTION = "delete-oauth-application";
         public static final String REGENERATE_CLIENT_SECRET_ACTION = "regenerate-client-secret";
         public static final String UPDATE_APP_STATE_ACTION = "update-app-state";
+        public static final String CONSOLE_CLIENT_ID = "CONSOLE";
+        public static final String CONSOLE_APP_NAME = "Console";
     }
 
     /**

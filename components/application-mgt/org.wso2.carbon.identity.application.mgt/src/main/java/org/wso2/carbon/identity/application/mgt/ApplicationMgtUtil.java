@@ -1,7 +1,7 @@
 /*
- * Copyright (c) 2014, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2014-2024, WSO2 LLC. (http://www.wso2.com).
  *
- * WSO2 Inc. licenses this file to you under the Apache License,
+ * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
  * You may obtain a copy of the License at
@@ -46,6 +46,7 @@ import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.application.common.model.SpFileStream;
 import org.wso2.carbon.identity.application.common.model.User;
+import org.wso2.carbon.identity.application.common.util.IdentityApplicationConstants;
 import org.wso2.carbon.identity.application.mgt.dao.ApplicationDAO;
 import org.wso2.carbon.identity.application.mgt.internal.ApplicationManagementServiceComponentHolder;
 import org.wso2.carbon.identity.application.mgt.provider.RegistryBasedApplicationPermissionProvider;
@@ -78,13 +79,16 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
+import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.CONSOLE_ACCESS_ORIGIN;
 import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.CONSOLE_ACCESS_URL_FROM_SERVER_CONFIGS;
 import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.ENABLE_APPLICATION_ROLE_VALIDATION_PROPERTY;
 import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.LogConstants.APP_OWNER;
 import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.LogConstants.DISABLE_LEGACY_AUDIT_LOGS_IN_APP_MGT_CONFIG;
 import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.LogConstants.ENABLE_V2_AUDIT_LOGS;
+import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.MYACCOUNT_ACCESS_ORIGIN;
 import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.MY_ACCOUNT_ACCESS_URL_FROM_SERVER_CONFIGS;
 import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.TENANT_DOMAIN_PLACEHOLDER;
+import static org.wso2.carbon.identity.application.mgt.ApplicationConstants.TRUSTED_APP_CONSENT_REQUIRED_PROPERTY;
 import static org.wso2.carbon.user.core.constants.UserCoreErrorConstants.ErrorMessages.ERROR_CODE_ROLE_ALREADY_EXISTS;
 import static org.wso2.carbon.utils.CarbonUtils.isLegacyAuditLogsDisabled;
 
@@ -1080,10 +1084,38 @@ public class ApplicationMgtUtil {
      * @param absoluteUrl     The URL which need to resolve from placeholders.
      * @return The resolved URL from placeholders.
      * @throws URLBuilderException If any error occurs when building absolute public url without path.
+     * @deprecated use {@link #resolveOriginUrlFromPlaceholders(String, String)}
      */
+    @Deprecated
     public static String resolveOriginUrlFromPlaceholders(String absoluteUrl) throws URLBuilderException {
 
         String basePath = ServiceURLBuilder.create().build().getAbsolutePublicUrlWithoutPath();
+        return StringUtils.replace(absoluteUrl, BASE_URL_PLACEHOLDER, basePath);
+    }
+
+    /**
+     * This method use to replace placeholders with the hostname and port of URLs for the portal apps.
+     *
+     * @param absoluteUrl     The URL which need to resolve from placeholders.
+     * @return The resolved URL from placeholders.
+     * @throws URLBuilderException If any error occurs when building absolute public url without path.
+     */
+    public static String resolveOriginUrlFromPlaceholders(String absoluteUrl, String appName)
+            throws URLBuilderException {
+
+        if (StringUtils.isEmpty(appName)) {
+            return resolveOriginUrlFromPlaceholders(absoluteUrl);
+        }
+        String basePath = StringUtils.EMPTY;
+        if (ApplicationConstants.CONSOLE_APPLICATION_NAME.equals(appName)) {
+            basePath = IdentityUtil.getProperty(CONSOLE_ACCESS_ORIGIN);
+        } else if (ApplicationConstants.MY_ACCOUNT_APPLICATION_NAME.equals(appName)) {
+            basePath = IdentityUtil.getProperty(MYACCOUNT_ACCESS_ORIGIN);
+        }
+
+        if (StringUtils.isEmpty(basePath)) {
+            return resolveOriginUrlFromPlaceholders(absoluteUrl);
+        }
         return StringUtils.replace(absoluteUrl, BASE_URL_PLACEHOLDER, basePath);
     }
 
@@ -1183,5 +1215,55 @@ public class ApplicationMgtUtil {
             }
             gen.writeEndObject();
         }
+    }
+
+    /**
+     * Check whether consent is required to configure trusted app configurations.
+     *
+     * @return True if trusted app consent is required.
+     */
+    public static boolean isTrustedAppConsentRequired() {
+
+        return Boolean.parseBoolean(IdentityUtil.getProperty(TRUSTED_APP_CONSENT_REQUIRED_PROPERTY));
+    }
+
+    /**
+     * Get the latest applicable version of the application.
+     *
+     * @param serviceProvider Service provider object.
+     * @return The latest applicable version.
+     */
+    public static String getApplicationUpdatedVersion(ServiceProvider serviceProvider) {
+
+        String currentVersion = serviceProvider.getApplicationVersion();
+        String inboundConfigType = getInboundConfigType(serviceProvider);
+
+        switch (currentVersion) {
+            case ApplicationConstants.ApplicationVersion.APP_VERSION_V0:
+            case ApplicationConstants.ApplicationVersion.APP_VERSION_V1:
+                if (!IdentityApplicationConstants.OAuth2.NAME.equals(inboundConfigType)) {
+                    currentVersion = ApplicationConstants.ApplicationVersion.APP_VERSION_V2;
+                }
+                break;
+            case ApplicationConstants.ApplicationVersion.APP_VERSION_V2:
+                break;
+            default:
+                throw new IllegalStateException("Unexpected value: " + currentVersion);
+        }
+        return currentVersion;
+    }
+
+    private static String getInboundConfigType(ServiceProvider serviceProvider) {
+
+        String inboundConfigType = null;
+        if (serviceProvider.getInboundAuthenticationConfig() != null &&
+                serviceProvider.getInboundAuthenticationConfig()
+                        .getInboundAuthenticationRequestConfigs() != null &&
+                serviceProvider.getInboundAuthenticationConfig()
+                        .getInboundAuthenticationRequestConfigs().length != 0) {
+            inboundConfigType = serviceProvider.getInboundAuthenticationConfig()
+                    .getInboundAuthenticationRequestConfigs()[0].getInboundAuthType();
+        }
+        return inboundConfigType;
     }
 }

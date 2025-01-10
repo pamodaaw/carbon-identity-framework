@@ -37,6 +37,7 @@ import org.wso2.carbon.identity.application.authentication.framework.config.mode
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthHistory;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.context.SessionContext;
+import org.wso2.carbon.identity.application.authentication.framework.exception.DuplicatedAuthUserException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.FrameworkException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.PostAuthenticationFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.UserIdNotFoundException;
@@ -65,6 +66,7 @@ import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.idp.mgt.IdentityProviderManagementException;
 import org.wso2.carbon.idp.mgt.IdentityProviderManager;
 import org.wso2.carbon.idp.mgt.util.IdPManagementUtil;
+import org.wso2.carbon.user.core.UserCoreConstants;
 import org.wso2.carbon.user.core.config.UserStorePreferenceOrderSupplier;
 import org.wso2.carbon.user.core.model.UserMgtContext;
 import org.wso2.carbon.user.core.util.UserCoreUtil;
@@ -98,7 +100,6 @@ import static org.wso2.carbon.identity.application.authentication.framework.util
 import static org.wso2.carbon.identity.application.authentication.framework.util.SessionNonceCookieUtil.isNonceCookieEnabled;
 import static org.wso2.carbon.identity.application.authentication.framework.util.SessionNonceCookieUtil.removeNonceCookie;
 import static org.wso2.carbon.identity.application.authentication.framework.util.SessionNonceCookieUtil.validateNonceCookie;
-import static org.wso2.carbon.utils.CarbonUtils.isLegacyAuditLogsDisabled;
 
 /**
  * Default authentication request handler.
@@ -576,7 +577,9 @@ public class DefaultAuthenticationRequestHandler implements AuthenticationReques
                         context.getLoginTenantDomain());
                 // Since the session context is already available, audit log will be added with updated details.
                 addAuditLogs(SessionMgtConstants.UPDATE_SESSION_ACTION,
-                        authenticationResult.getSubject().getUserName(), sessionContextKey,
+                        authenticationResult.getSubject().getUserStoreDomain() +
+                                UserCoreConstants.DOMAIN_SEPARATOR +
+                                authenticationResult.getSubject().getUserName(), sessionContextKey,
                         authenticationResult.getSubject().getTenantDomain(), FrameworkUtils.getCorrelation(),
                         updatedSessionTime, sessionContext.isRememberMe());
             } else {
@@ -624,7 +627,9 @@ public class DefaultAuthenticationRequestHandler implements AuthenticationReques
                 // The session context will be stored from here. Since the audit log will be logged as a storing
                 // operation.
                 addAuditLogs(SessionMgtConstants.STORE_SESSION_ACTION,
-                        authenticationResult.getSubject().getUserName(), sessionContextKey,
+                        authenticationResult.getSubject().getUserStoreDomain() +
+                                UserCoreConstants.DOMAIN_SEPARATOR +
+                                authenticationResult.getSubject().getUserName(), sessionContextKey,
                         authenticationResult.getSubject().getTenantDomain(), FrameworkUtils.getCorrelation(),
                         createdTimeMillis, sessionContext.isRememberMe());
                 if (request.getAttribute(ALLOW_SESSION_CREATION) == null
@@ -701,6 +706,13 @@ public class DefaultAuthenticationRequestHandler implements AuthenticationReques
                         StringUtils.join(federatedAuthenticatorNames, COMMA) +
                         " and added to the authentication result");
             }
+        }
+
+        // Adding locally mapped remote claims to authentication results.
+        if (context.getProperty(FrameworkConstants.UNFILTERED_SP_CLAIM_VALUES) instanceof Map) {
+            Map<String, String> mappedRemoteClaims =
+                    (Map<String, String>) context.getProperty(FrameworkConstants.UNFILTERED_SP_CLAIM_VALUES);
+            authenticationResult.setMappedRemoteClaims(mappedRemoteClaims);
         }
 
         // Checking weather inbound protocol is an already cache removed one, request come from federated or other
@@ -898,7 +910,17 @@ public class DefaultAuthenticationRequestHandler implements AuthenticationReques
                                         user.getUserStoreDomain(), user.getUserName());
                         if (StringUtils.isNotEmpty(localUserId) &&
                                 !UserSessionStore.getInstance().isExistingMapping(localUserId, sessionContextKey)) {
-                            UserSessionStore.getInstance().storeUserSessionData(localUserId, sessionContextKey);
+                            try {
+                                UserSessionStore.getInstance().storeUserSessionData(localUserId, sessionContextKey);
+                            } catch (DuplicatedAuthUserException e) {
+                                // If isExistingMapping return false due to a database write latency issue,
+                                // the same user to session mapping will be persisted from the same node handling the
+                                // request. Thus, persisting the user to session mapping can be gracefully ignored here.
+                                if (log.isDebugEnabled()) {
+                                    log.debug("Mapping between session Id: " + sessionContextKey + " and user Id: "
+                                            + userId + " is already persisted.");
+                                }
+                            }
                         }
                     }
                 } catch (UserSessionException e) {
@@ -1212,9 +1234,6 @@ public class DefaultAuthenticationRequestHandler implements AuthenticationReques
                               String userTenantDomain, String traceId, Long lastAccessedTimestamp,
                               boolean isRememberMe) {
 
-        if (isLegacyAuditLogsDisabled()) {
-            return;
-        }
         JSONObject auditData = new JSONObject();
         auditData.put(SessionMgtConstants.SESSION_CONTEXT_ID, sessionKey);
         auditData.put(SessionMgtConstants.REMEMBER_ME, isRememberMe);

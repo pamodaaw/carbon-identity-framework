@@ -66,7 +66,9 @@ import org.wso2.carbon.identity.application.authentication.framework.config.mode
 import org.wso2.carbon.identity.application.authentication.framework.config.model.SequenceConfig;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.StepConfig;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JsBaseGraphBuilderFactory;
+import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JsGenericGraphBuilderFactory;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JsGraphBuilderFactory;
+import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.graaljs.JsGraalGraphBuilderFactory;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.openjdk.nashorn.JsOpenJdkNashornGraphBuilderFactory;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.context.SessionContext;
@@ -105,6 +107,7 @@ import org.wso2.carbon.identity.application.authentication.framework.model.Authe
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticationResult;
 import org.wso2.carbon.identity.application.authentication.framework.store.UserSessionStore;
 import org.wso2.carbon.identity.application.common.model.Claim;
+import org.wso2.carbon.identity.application.common.model.ClaimConfig;
 import org.wso2.carbon.identity.application.common.model.ClaimMapping;
 import org.wso2.carbon.identity.application.common.model.FederatedAuthenticatorConfig;
 import org.wso2.carbon.identity.application.common.model.IdPGroup;
@@ -161,6 +164,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
@@ -194,6 +198,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.AdaptiveAuthentication.AUTHENTICATOR_NAME_IN_AUTH_CONFIG;
+import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.Application.CONSOLE_APP;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.Application.CONSOLE_APP_PATH;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.Application.MY_ACCOUNT_APP;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.Application.MY_ACCOUNT_APP_PATH;
@@ -201,12 +206,14 @@ import static org.wso2.carbon.identity.application.authentication.framework.util
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.Config.AUTHENTICATION_CONTEXT_EXPIRY_VALIDATION;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.Config.SKIP_LOCAL_USER_SEARCH_FOR_AUTHENTICATION_FLOW_HANDLERS;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.Config.USER_SESSION_MAPPING_ENABLED;
+import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.ENABLE_CONFIGURED_IDP_SUB_FOR_FEDERATED_USER_ASSOCIATION;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.InternalRoleDomains.APPLICATION_DOMAIN;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.InternalRoleDomains.WORKFLOW_DOMAIN;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.REQUEST_PARAM_SP;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.RequestParams.CORRELATION_ID;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.RequestParams.IS_IDF_INITIATED_FROM_AUTHENTICATOR;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.RequestParams.USER_TENANT_DOMAIN_HINT;
+import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.USERNAME_CLAIM;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.USE_IDP_ROLE_CLAIM_AS_IDP_GROUP_CLAIM;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkErrorConstants.ErrorMessages.ERROR_WHILE_GETTING_IDP_BY_NAME;
 import static org.wso2.carbon.identity.configuration.mgt.core.constant.ConfigurationConstants.ErrorMessages.ERROR_CODE_ATTRIBUTE_DOES_NOT_EXISTS;
@@ -251,6 +258,7 @@ public class FrameworkUtils {
     private static Boolean authenticatorNameInAuthConfigPreference;
     private static final String OPENJDK_SCRIPTER_CLASS_NAME = "org.openjdk.nashorn.api.scripting.ScriptObjectMirror";
     private static final String JDK_SCRIPTER_CLASS_NAME = "jdk.nashorn.api.scripting.ScriptObjectMirror";
+    private static final String GRAALJS_SCRIPTER_CLASS_NAME = "org.graalvm.polyglot.Context";
 
     private FrameworkUtils() {
     }
@@ -792,6 +800,87 @@ public class FrameworkUtils {
                 .map(SequenceConfig::getApplicationConfig)
                 .map(ApplicationConfig::getServiceProvider)
                 .map(ServiceProvider::getApplicationResourceId);
+    }
+
+    /**
+     * Retrieve the user id claim configured for the federated IDP.
+     *
+     * @param federatedIdpName  Federated IDP name.
+     * @param tenantDomain      Tenant domain.
+     * @return  User ID claim configured for the IDP.
+     * @throws PostAuthenticationFailedException PostAuthenticationFailedException.
+     */
+    public static String getUserIdClaimURI(String federatedIdpName, String tenantDomain)
+            throws PostAuthenticationFailedException {
+
+        String userIdClaimURI;
+        IdentityProvider idp;
+        try {
+            idp = FrameworkServiceDataHolder.getInstance().getIdentityProviderManager()
+                    .getIdPByName(federatedIdpName, tenantDomain);
+        } catch (IdentityProviderManagementException e) {
+            throw new PostAuthenticationFailedException(
+                    ERROR_WHILE_GETTING_IDP_BY_NAME.getCode(),
+                    String.format(FrameworkErrorConstants.ErrorMessages.ERROR_WHILE_GETTING_IDP_BY_NAME.getMessage(),
+                            tenantDomain), e);
+        }
+        if (idp == null) {
+            return null;
+        }
+        ClaimConfig claimConfigs = idp.getClaimConfig();
+        if (claimConfigs == null) {
+            return null;
+        }
+        ClaimMapping[] claimMappings = claimConfigs.getClaimMappings();
+        if (claimMappings == null || claimMappings.length < 1) {
+            return null;
+        }
+        userIdClaimURI = claimConfigs.getUserClaimURI();
+        if (userIdClaimURI != null) {
+            return userIdClaimURI;
+        }
+        ClaimMapping userNameClaimMapping = Arrays.stream(claimMappings).filter(claimMapping ->
+                        StringUtils.equals(USERNAME_CLAIM, claimMapping.getLocalClaim().getClaimUri()))
+                .findFirst()
+                .orElse(null);
+        if (userNameClaimMapping != null) {
+            userIdClaimURI = userNameClaimMapping.getRemoteClaim().getClaimUri();
+        }
+        return userIdClaimURI;
+    }
+
+    /**
+     * Get the external subject from the step config.
+     *
+     * @param stepConfig    Step config.
+     * @param tenantDomain  Tenant domain.
+     * @return External subject.
+     * @throws PostAuthenticationFailedException PostAuthenticationFailedException.
+     */
+    public static String getExternalSubject(StepConfig stepConfig, String tenantDomain)
+            throws PostAuthenticationFailedException {
+
+        String externalSubject = null;
+        String userIdClaimURI = getUserIdClaimURI(stepConfig.getAuthenticatedIdP(), tenantDomain);
+        if (StringUtils.isNotEmpty(userIdClaimURI)) {
+            externalSubject = stepConfig.getAuthenticatedUser().getUserAttributes().entrySet().stream()
+                    .filter(userAttribute -> userAttribute.getKey().getRemoteClaim().getClaimUri()
+                            .equals(userIdClaimURI))
+                    .map(Map.Entry::getValue)
+                    .findFirst()
+                    .orElse(null);
+        }
+        return externalSubject;
+    }
+
+    /**
+     * Get the configuration whether the external subject attribute based on IdP configurations..
+     *
+     * @return true if the IdP configurations has to be honoured.
+     */
+    public static boolean isConfiguredIdpSubForFederatedUserAssociationEnabled() {
+
+        return Boolean.parseBoolean(IdentityUtil.getProperty(ENABLE_CONFIGURED_IDP_SUB_FOR_FEDERATED_USER_ASSOCIATION));
     }
 
     private static String getServiceProviderNameByReferer(HttpServletRequest request) {
@@ -2217,20 +2306,20 @@ public class FrameworkUtils {
             cookieBuilder.setDomain(cookieConfig.getDomain());
         }
 
-        if (cookieConfig.getPath() != null) {
-            cookieBuilder.setPath(cookieConfig.getPath());
-        } else if (StringUtils.isNotBlank(path)) {
+        if (StringUtils.isNotBlank(path)) {
             cookieBuilder.setPath(path);
+        } else if (cookieConfig.getPath() != null) {
+            cookieBuilder.setPath(cookieConfig.getPath());
         }
 
         if (cookieConfig.getComment() != null) {
             cookieBuilder.setComment(cookieConfig.getComment());
         }
 
-        if (cookieConfig.getMaxAge() > 0) {
-            cookieBuilder.setMaxAge(cookieConfig.getMaxAge());
-        } else if (age != null) {
+        if (age != null) {
             cookieBuilder.setMaxAge(age);
+        } else if (cookieConfig.getMaxAge() > 0) {
+            cookieBuilder.setMaxAge(cookieConfig.getMaxAge());
         }
 
         if (cookieConfig.getVersion() > 0) {
@@ -2740,7 +2829,7 @@ public class FrameworkUtils {
                 }
                 // check for role claim uri in the idaps dialect.
                 for (Entry<String, String> entry : carbonToStandardClaimMapping.entrySet()) {
-                    if (StringUtils.isNotEmpty(idpRoleMappingURI) && 
+                    if (StringUtils.isNotEmpty(idpRoleMappingURI) &&
                         idpRoleMappingURI.equalsIgnoreCase(entry.getValue())) {
                         idpRoleMappingURI = entry.getKey();
                     }
@@ -2926,6 +3015,19 @@ public class FrameworkUtils {
     }
 
     /**
+     * Checks if the username field should be autofilled with the subject attribute
+     * during Just-In-Time (JIT) provisioning with prompt for username, password, and consent.
+     *
+     * @return true if the username field should be autofilled with the
+     * subject attribute; false otherwise.
+     */
+    public static boolean isUsernameFieldAutofillWithSubjectAttr() {
+
+        return Boolean.parseBoolean(
+                IdentityUtil.getProperty("JITProvisioning.AutofillUsernameFieldWithSubjectAttribute"));
+    }
+
+    /**
      * This method determines whether username pattern validation should be skipped for JIT provisioning users based
      * on the configuration file.
      *
@@ -2935,6 +3037,16 @@ public class FrameworkUtils {
 
         return Boolean.parseBoolean(
                 IdentityUtil.getProperty("JITProvisioning.SkipUsernamePatternValidation"));
+    }
+
+    /**
+     * This method determines whether authentication flow should be break if JIT provisioning has failed.
+     *
+     * @return boolean Whether to fail the authentication flow.
+     */
+    public static boolean isAuthenticationFailOnJitFail() {
+
+        return Boolean.parseBoolean(IdentityUtil.getProperty("JITProvisioning.FailAuthnOnProvisionFailure"));
     }
 
 
@@ -3012,7 +3124,8 @@ public class FrameworkUtils {
      */
     public static Object toJsSerializable(Object value) {
 
-        return FrameworkServiceDataHolder.getInstance().getJsGraphBuilderFactory().getJsUtil().toJsSerializable(value);
+        return FrameworkServiceDataHolder.getInstance().getJsGenericGraphBuilderFactory()
+                .getJsUtil().toJsSerializable(value);
     }
 
     /**
@@ -3903,10 +4016,10 @@ public class FrameworkUtils {
             serviceProvider = context.getSequenceConfig().getApplicationConfig().getApplicationName();
         }
         /*
-         Skip My Account application redirections to use ServiceURLBuilder for URL generation
-         since My Account is SaaS.
+         Skip My Account and Console application redirections to use ServiceURLBuilder for URL generation
+         since custom domain branding capabilities are not provided for them.
          */
-        if (!MY_ACCOUNT_APP.equals(serviceProvider)) {
+        if (!(MY_ACCOUNT_APP.equals(serviceProvider) || CONSOLE_APP.equals(serviceProvider))) {
             if (callerPath != null && callerPath.startsWith(FrameworkConstants.TENANT_CONTEXT_PREFIX)) {
                 String callerTenant = callerPath.split("/")[2];
                 String callerPathWithoutTenant = callerPath.replaceFirst("/t/[^/]+/", "/");
@@ -4000,22 +4113,40 @@ public class FrameworkUtils {
 
     public static JsBaseGraphBuilderFactory createJsGraphBuilderFactoryFromConfig() {
 
+        JsGenericGraphBuilderFactory jsGenericGraphBuilderFactory = createJsGenericGraphBuilderFactoryFromConfig();
+        if (jsGenericGraphBuilderFactory instanceof JsBaseGraphBuilderFactory) {
+            return (JsBaseGraphBuilderFactory) jsGenericGraphBuilderFactory;
+        }
+        return null;
+    }
+
+    public static JsGenericGraphBuilderFactory createJsGenericGraphBuilderFactoryFromConfig() {
+
         String scriptEngineName = IdentityUtil.getProperty(FrameworkConstants.SCRIPT_ENGINE_CONFIG);
         if (scriptEngineName != null) {
-            if (StringUtils.equalsIgnoreCase(FrameworkConstants.OPENJDK_NASHORN, scriptEngineName)) {
+            if (StringUtils.equalsIgnoreCase(FrameworkConstants.GRAAL_JS, scriptEngineName)) {
+                return new JsGraalGraphBuilderFactory();
+            } else if (StringUtils.equalsIgnoreCase(FrameworkConstants.OPENJDK_NASHORN, scriptEngineName)) {
                 return new JsOpenJdkNashornGraphBuilderFactory();
+            } else if (StringUtils.equalsIgnoreCase(FrameworkConstants.NASHORN, scriptEngineName)) {
+                return new JsGraphBuilderFactory();
             }
         }
         // Config is not set. Hence going with class for name approach.
         try {
-            Class.forName(OPENJDK_SCRIPTER_CLASS_NAME);
-            return new JsOpenJdkNashornGraphBuilderFactory();
+            Class.forName(GRAALJS_SCRIPTER_CLASS_NAME);
+            return new JsGraalGraphBuilderFactory();
         } catch (ClassNotFoundException e) {
             try {
-                Class.forName(JDK_SCRIPTER_CLASS_NAME);
-                return new JsGraphBuilderFactory();
+                Class.forName(OPENJDK_SCRIPTER_CLASS_NAME);
+                return new JsOpenJdkNashornGraphBuilderFactory();
             } catch (ClassNotFoundException classNotFoundException) {
-                return null;
+                try {
+                    Class.forName(JDK_SCRIPTER_CLASS_NAME);
+                    return new JsGraphBuilderFactory();
+                } catch (ClassNotFoundException ex) {
+                    return null;
+                }
             }
         }
     }
@@ -4153,5 +4284,17 @@ public class FrameworkUtils {
         } catch (CryptoException e) {
             throw new FrameworkException("Error occurred while encrypting claim value of: " + claimURI, e);
         }
+    }
+
+    /**
+     * This method return true if the given URL is relative URL.
+     *
+     * @param uriString
+     * @return true if the given URL is relative URL.
+     * @throws URISyntaxException
+     */
+    public static boolean isURLRelative(String uriString) throws URISyntaxException {
+
+        return !new URI(uriString).isAbsolute();
     }
 }

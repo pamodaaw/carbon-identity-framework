@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.wso2.carbon.identity.framework</groupId>
         <artifactId>identity-core</artifactId>
-        <version>7.0.116-SNAPSHOT</version>
+        <version>7.7.87-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
 
@@ -117,13 +117,8 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-api-mockito2</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-module-testng</artifactId>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-testng</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -213,6 +208,7 @@
                             org.apache.commons.collections; version="${commons-collections.wso2.osgi.version.range}",
                             org.apache.commons.collections4; version = "${commons-collections4.wso2.osgi.version.range}",
                             ua_parser; version="${ua_parser.version.range}",
+                            org.wso2.carbon.utils.security;version="${carbon.kernel.package.import.version.range}",
                         </Import-Package>
                         <Export-Package>
                             !org.wso2.carbon.identity.core.internal,
@@ -230,7 +226,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven.surefire.plugin.version}</version>
                 <configuration>
+                    <!--suppress UnresolvedMavenProperty -->
                     <argLine>
+                        ${argLine}
                         --add-opens=java.base/java.util=ALL-UNNAMED
                     </argLine>
                     <suiteXmlFiles>
@@ -297,8 +295,8 @@
                 </configuration>
             </plugin>
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
                 <configuration>
                     <skip>true</skip>
                 </configuration>

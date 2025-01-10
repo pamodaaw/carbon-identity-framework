@@ -1,12 +1,12 @@
 /*
- * Copyright (c) 2014, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) 2014-2025, WSO2 LLC. (http://www.wso2.com).
  *
- * WSO2 Inc. licenses this file to you under the Apache License,
+ * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License.
  * You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
@@ -80,6 +80,12 @@ public class ProvisioningThread implements Callable<Boolean> {
             } else {
                 PrivilegedCarbonContext.getThreadLocalCarbonContext().setTenantDomain(tenantDomainName, true);
             }
+
+            /* Skip outbound provisioning triggered for JIT provisioning flow, where the JIT outbound is disabled for
+               the configured connector. */
+            if (provisioningEntity.isJitProvisioning() && !connector.isJitProvisioningEnabled()) {
+                return true;
+            }
             ProvisionedIdentifier provisionedIdentifier = null;
             // real provisioning happens now.
             provisionedIdentifier = connector.provision(provisioningEntity);
@@ -112,9 +118,9 @@ public class ProvisioningThread implements Callable<Boolean> {
             }
             success = true;
         } catch (Exception e) {
-            String errMsg = " Provisioning for Entity " + provisioningEntity.getEntityName() +
+            String errMsg = "Fail the Provisioning for Entity " + provisioningEntity.getEntityName() +
                     " For operation = " + provisioningEntity.getOperation();
-            log.error(errMsg, e);
+            log.warn(errMsg);
             throw new IdentityProvisioningException(errMsg, e);
         } finally {
             PrivilegedCarbonContext.endTenantFlow();

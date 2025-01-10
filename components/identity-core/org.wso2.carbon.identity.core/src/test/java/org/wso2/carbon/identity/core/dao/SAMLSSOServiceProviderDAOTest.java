@@ -1,19 +1,19 @@
 /*
- *  Copyright (c) 2017, WSO2 Inc. (http://www.wso2.org) All Rights Reserved.
+ * Copyright (c) (2007-2023), WSO2 LLC. (http://www.wso2.com).
  *
- *  WSO2 Inc. licenses this file to you under the Apache License,
- *  Version 2.0 (the "License"); you may not use this file except
- *  in compliance with the License.
- *  You may obtain a copy of the License at
+ * WSO2 LLC. licenses this file to you under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ * You may obtain a copy of the License at
  *
- *  http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
- *  Unless required by applicable law or agreed to in writing,
- *  software distributed under the License is distributed on an
- *  "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- *  KIND, either express or implied.  See the License for the
- *  specific language governing permissions and limitations
- *  under the License.
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
  */
 
 package org.wso2.carbon.identity.core.dao;
@@ -21,10 +21,9 @@ package org.wso2.carbon.identity.core.dao;
 import org.apache.commons.codec.binary.Base64;
 import org.apache.commons.lang.StringUtils;
 import org.mockito.ArgumentCaptor;
+import org.mockito.MockedStatic;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-import org.powermock.core.classloader.annotations.PrepareForTest;
-import org.powermock.modules.testng.PowerMockTestCase;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.DataProvider;
@@ -40,6 +39,7 @@ import org.wso2.carbon.registry.core.Resource;
 import org.wso2.carbon.registry.core.ResourceImpl;
 import org.wso2.carbon.registry.core.exceptions.RegistryException;
 import org.wso2.carbon.registry.core.jdbc.utils.Transaction;
+import org.wso2.carbon.registry.core.service.RegistryService;
 import org.wso2.carbon.registry.core.session.UserRegistry;
 import org.wso2.carbon.user.core.service.RealmService;
 import org.wso2.carbon.user.core.tenant.TenantManager;
@@ -54,12 +54,12 @@ import java.util.Properties;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.verify;
-import static org.powermock.api.mockito.PowerMockito.doAnswer;
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
-import static org.powermock.api.mockito.PowerMockito.when;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
@@ -68,10 +68,9 @@ import static org.testng.Assert.fail;
 /**
  * Test class for SAMLSSOServiceProviderDAO.
  */
-@PrepareForTest({Transaction.class, IdentityTenantUtil.class})
-public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
+public class SAMLSSOServiceProviderDAOTest {
 
-    private SAMLSSOServiceProviderDAO objUnderTest;
+    private RegistrySAMLSSOServiceProviderDAOImpl objUnderTest;
     private boolean transactionStarted = false;
 
     private Registry mockRegistry;
@@ -79,12 +78,17 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
     private Map<String, List<String>> dummyBasicProperties;
     private Map<String, List<String>> dummyAdvProperties;
     private Map<String, List<String>> dummyPropertiesWithAnIssuerQualifier;
+    private MockedStatic<Transaction> transaction;
+    private MockedStatic<IdentityTenantUtil> identityTenantUtil;
+    private static final int TENANT_ID = 1;
 
     @BeforeMethod
     public void setUp() throws Exception {
-        mockStatic(Transaction.class);
+
+        transaction = mockStatic(Transaction.class);
         mockRegistry = mock(UserRegistry.class);
-        when(Transaction.isStarted()).thenReturn(transactionStarted);
+        RegistryService mockRegistryService = mock(RegistryService.class);
+        transaction.when(Transaction::isStarted).thenReturn(transactionStarted);
         //Mock commit transaction
         doAnswer(new Answer<Object>() {
             @Override
@@ -102,7 +106,10 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
             }
         }).when(mockRegistry).beginTransaction();
 
-        objUnderTest = new SAMLSSOServiceProviderDAO(mockRegistry);
+        objUnderTest = new RegistrySAMLSSOServiceProviderDAOImpl();
+        identityTenantUtil = mockStatic(IdentityTenantUtil.class);
+        when(IdentityTenantUtil.getRegistryService()).thenReturn(mockRegistryService);
+        when(mockRegistryService.getConfigSystemRegistry(TENANT_ID)).thenReturn((UserRegistry) mockRegistry);
         when(mockRegistry.newResource()).thenReturn(new ResourceImpl());
     }
 
@@ -186,6 +193,8 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
 
     @AfterMethod
     public void tearDown() throws Exception {
+        identityTenantUtil.close();
+        transaction.close();
     }
 
     @DataProvider(name = "ResourceToObjectData")
@@ -204,7 +213,7 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         properties.putAll((Map<?, ?>) paramMapObj);
         Resource dummyResource = new ResourceImpl();
         dummyResource.setProperties(properties);
-        SAMLSSOServiceProviderDO serviceProviderDO = objUnderTest.resourceToObject(dummyResource);
+        SAMLSSOServiceProviderDO serviceProviderDO = objUnderTest.buildSAMLSSOServiceProviderDAO(dummyResource);
 
         assertEquals(serviceProviderDO.getIssuer(), dummyResource.getProperty(IdentityRegistryResources
                 .PROP_SAML_SSO_ISSUER), "Issuer Mismatch.");
@@ -337,7 +346,7 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         properties.putAll((Map<?, ?>) paramMapObj);
         Resource dummyResource = new ResourceImpl();
         dummyResource.setProperties(properties);
-        SAMLSSOServiceProviderDO serviceProviderDO = objUnderTest.resourceToObject(dummyResource);
+        SAMLSSOServiceProviderDO serviceProviderDO = objUnderTest.buildSAMLSSOServiceProviderDAO(dummyResource);
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
         String expectedPath = getPath(dummyResource
                 .getProperty(IdentityRegistryResources.PROP_SAML_SSO_ISSUER));
@@ -346,7 +355,7 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
                     + IdentityRegistryResources.QUALIFIER_ID + dummyResource.getProperty(IdentityRegistryResources.
                     PROP_SAML_SSO_ISSUER_QUALIFIER));
         }
-        objUnderTest.addServiceProvider(serviceProviderDO);
+        objUnderTest.addServiceProvider(serviceProviderDO, TENANT_ID);
         verify(mockRegistry).put(captor.capture(), any(Resource.class));
         assertEquals(captor.getValue(), expectedPath, "Resource is not added at correct path");
     }
@@ -357,7 +366,7 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         String existingPath = getPath("existingIssuer");
         serviceProviderDO.setIssuer("existingIssuer");
         when(mockRegistry.resourceExists(existingPath)).thenReturn(true);
-        assertFalse(objUnderTest.addServiceProvider(serviceProviderDO), "Resource should not have added.");
+        assertFalse(objUnderTest.addServiceProvider(serviceProviderDO, TENANT_ID), "Resource should not have added.");
     }
 
     @Test(expectedExceptions = {IdentityException.class})
@@ -367,7 +376,7 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         String existingPath = getPath("erringIssuer");
         serviceProviderDO.setIssuer("erringIssuer");
         doThrow(RegistryException.class).when(mockRegistry).put(eq(existingPath), any(Resource.class));
-        objUnderTest.addServiceProvider(serviceProviderDO);
+        objUnderTest.addServiceProvider(serviceProviderDO, TENANT_ID);
     }
 
     @Test(dataProvider = "ResourceToObjectData")
@@ -376,7 +385,7 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         properties.putAll((Map<?, ?>) paramMapObj);
         Resource dummyResource = new ResourceImpl();
         dummyResource.setProperties(properties);
-        SAMLSSOServiceProviderDO serviceProviderDO = objUnderTest.resourceToObject(dummyResource);
+        SAMLSSOServiceProviderDO serviceProviderDO = objUnderTest.buildSAMLSSOServiceProviderDAO(dummyResource);
         ArgumentCaptor<String> captor = ArgumentCaptor.forClass(String.class);
         String existingIssuer = dummyResource.getProperty(IdentityRegistryResources.PROP_SAML_SSO_ISSUER);
         if (StringUtils.isNotBlank(serviceProviderDO.getIssuerQualifier())) {
@@ -386,7 +395,7 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         }
         String expectedPath = getPath(existingIssuer);
         when(mockRegistry.resourceExists(expectedPath)).thenReturn(true);
-        objUnderTest.updateServiceProvider(serviceProviderDO, existingIssuer);
+        objUnderTest.updateServiceProvider(serviceProviderDO, existingIssuer, TENANT_ID);
         verify(mockRegistry).put(captor.capture(), any(Resource.class));
         assertEquals(captor.getValue(), expectedPath, "Resource is not added at correct path");
     }
@@ -396,7 +405,7 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         SAMLSSOServiceProviderDO serviceProviderDO = new SAMLSSOServiceProviderDO();
         serviceProviderDO.setIssuer("newIssuer");
         when(mockRegistry.resourceExists(getPath("newIssuer"))).thenReturn(true);
-        assertFalse(objUnderTest.updateServiceProvider(serviceProviderDO, "existingIssuer"), "Resource should not have updated.");
+        assertFalse(objUnderTest.updateServiceProvider(serviceProviderDO, "existingIssuer", TENANT_ID), "Resource should not have updated.");
     }
 
     @Test
@@ -429,7 +438,7 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         when(mockRegistry.resourceExists(paths[0])).thenReturn(true);
         when(mockRegistry.resourceExists(paths[1])).thenReturn(true);
         when(mockRegistry.resourceExists(paths[2])).thenReturn(true);
-        SAMLSSOServiceProviderDO[] serviceProviders = objUnderTest.getServiceProviders();
+        SAMLSSOServiceProviderDO[] serviceProviders = objUnderTest.getServiceProviders(TENANT_ID);
         assertEquals(serviceProviders.length, 3, "Should have returned 3 service providers.");
     }
 
@@ -438,7 +447,7 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         String existingIssuer = "ExistingIssuer";
         String path = getPath(existingIssuer);
         when(mockRegistry.resourceExists(path)).thenReturn(true);
-        assertTrue(objUnderTest.removeServiceProvider(existingIssuer), "SP Resource is not deleted from path");
+        assertTrue(objUnderTest.removeServiceProvider(existingIssuer, TENANT_ID), "SP Resource is not deleted from path");
     }
 
     @Test
@@ -446,22 +455,22 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         String nonExistingIssuer = "NonExistingIssuer";
         String path = getPath(nonExistingIssuer);
         when(mockRegistry.resourceExists(path)).thenReturn(false);
-        assertFalse(objUnderTest.removeServiceProvider(nonExistingIssuer), "SP Resource should not have existed to " +
+        assertFalse(objUnderTest.removeServiceProvider(nonExistingIssuer, TENANT_ID), "SP Resource should not have existed to " +
                 "delete.");
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testRemoveEmptyServiceProvider() throws Exception {
-        objUnderTest.removeServiceProvider("");
+        objUnderTest.removeServiceProvider("", TENANT_ID);
         fail("SP Resource with empty name could not have been deleted.");
     }
 
     @Test
     public void testGetServiceProvider() throws Exception {
-        mockStatic(IdentityTenantUtil.class);
+
         RealmService mockRealmService = mock(RealmService.class);
         TenantManager mockTenantManager = mock(TenantManager.class);
-        when(IdentityTenantUtil.getRealmService()).thenReturn(mockRealmService);
+        identityTenantUtil.when(IdentityTenantUtil::getRealmService).thenReturn(mockRealmService);
         when(mockRealmService.getTenantManager()).thenReturn(mockTenantManager);
         when(mockTenantManager.getDomain(anyInt())).thenReturn("test.com");
 
@@ -475,8 +484,10 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         when(mockRegistry.get(path)).thenReturn(dummyResource);
 
         SAMLSSOServiceProviderDO serviceProviderDO = objUnderTest.getServiceProvider(dummyResource.getProperty
-                (IdentityRegistryResources.PROP_SAML_SSO_ISSUER));
-        assertEquals(serviceProviderDO.getTenantDomain(), "test.com", "Retrieved resource's tenant domain mismatch");
+                (IdentityRegistryResources.PROP_SAML_SSO_ISSUER), TENANT_ID);
+        assertEquals(serviceProviderDO.getTenantDomain(), "test.com",
+                "Retrieved resource's tenant domain mismatch");
+
     }
 
     @Test
@@ -484,7 +495,7 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         String validSP = "ValidSP";
         String path = getPath(validSP);
         when(mockRegistry.resourceExists(path)).thenReturn(true);
-        assertTrue(objUnderTest.isServiceProviderExists(validSP));
+        assertTrue(objUnderTest.isServiceProviderExists(validSP, TENANT_ID));
     }
 
     @Test
@@ -492,7 +503,7 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         String invalidSP = "InvalidSP";
         String path = getPath(invalidSP);
         when(mockRegistry.resourceExists(path)).thenReturn(false);
-        assertFalse(objUnderTest.isServiceProviderExists(invalidSP));
+        assertFalse(objUnderTest.isServiceProviderExists(invalidSP, TENANT_ID));
     }
 
     @Test
@@ -505,8 +516,8 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         String expectedPath = getPath(dummyResource
                 .getProperty(IdentityRegistryResources.PROP_SAML_SSO_ISSUER));
         when(mockRegistry.resourceExists(expectedPath)).thenReturn(false);
-        SAMLSSOServiceProviderDO serviceProviderDO = objUnderTest.resourceToObject(dummyResource);
-        assertEquals(objUnderTest.uploadServiceProvider(serviceProviderDO), serviceProviderDO, "Same resource should" +
+        SAMLSSOServiceProviderDO serviceProviderDO = objUnderTest.buildSAMLSSOServiceProviderDAO(dummyResource);
+        assertEquals(objUnderTest.uploadServiceProvider(serviceProviderDO, TENANT_ID), serviceProviderDO, "Same resource should" +
                 " have returned after successful upload.");
     }
 
@@ -520,8 +531,8 @@ public class SAMLSSOServiceProviderDAOTest extends PowerMockTestCase {
         String expectedPath = getPath(dummyResource
                 .getProperty(IdentityRegistryResources.PROP_SAML_SSO_ISSUER));
         when(mockRegistry.resourceExists(expectedPath)).thenReturn(true);
-        SAMLSSOServiceProviderDO serviceProviderDO = objUnderTest.resourceToObject(dummyResource);
-        objUnderTest.uploadServiceProvider(serviceProviderDO);
+        SAMLSSOServiceProviderDO serviceProviderDO = objUnderTest.buildSAMLSSOServiceProviderDAO(dummyResource);
+        objUnderTest.uploadServiceProvider(serviceProviderDO, TENANT_ID);
         fail("Uploading an existing SP should have failed");
     }
 

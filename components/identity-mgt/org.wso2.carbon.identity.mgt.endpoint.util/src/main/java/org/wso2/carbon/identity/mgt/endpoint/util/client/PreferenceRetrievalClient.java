@@ -36,6 +36,7 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.wso2.carbon.identity.mgt.endpoint.util.IdentityManagementEndpointUtil;
 import org.wso2.carbon.identity.mgt.endpoint.util.IdentityManagementServiceUtil;
+import org.wso2.carbon.idp.mgt.util.IdPManagementConstants;
 import org.wso2.carbon.utils.HTTPClientUtils;
 
 import java.io.IOException;
@@ -57,8 +58,6 @@ public class PreferenceRetrievalClient {
     private static final String PREFERENCE_API_RELATIVE_PATH = "/api/server/v1/identity-governance/preferences";
     private static final String GOVERNANCE_API_RELATIVE_PATH = "/api/server/v1/identity-governance";
     private static final String SELF_REGISTRATION_PROPERTY = "SelfRegistration.Enable";
-    private static final String USERNAME_RECOVERY_PROPERTY = "Recovery.Notification.Username.Enable";
-    private static final String NOTIFICATION_PASSWORD_RECOVERY_PROPERTY = "Recovery.Notification.Password.Enable";
     private static final String QUESTION_PASSWORD_RECOVERY_PROPERTY = "Recovery.Question.Password.Enable";
     private static final String SELF_SIGN_UP_LOCK_ON_CREATION_PROPERTY = "SelfRegistration.LockOnCreation";
     private static final String MULTI_ATTRIBUTE_LOGIN_PROPERTY = "account.multiattributelogin.handler.enable";
@@ -76,6 +75,7 @@ public class PreferenceRetrievalClient {
     private static final String TYPING_DNA_PROPERTY = "adaptive_authentication.tdna.enable";
     private static final String AUTO_LOGIN_AFTER_SELF_SIGN_UP = "SelfRegistration.AutoLogin.Enable";
     public static final String SEND_CONFIRMATION_ON_CREATION = "SelfRegistration.SendConfirmationOnCreation";
+    public static final String SHOW_USERNAME_UNAVAILABILITY = "SelfRegistration.ShowUsernameUnavailability";
     private static final String AUTO_LOGIN_AFTER_PASSWORD_RECOVERY = "Recovery.AutoLogin.Enable";
     private static final String RECOVERY_CALLBACK_REGEX_PROP = "Recovery.CallbackRegex";
     private static final String SELF_REG_CALLBACK_REGEX_PROP = "SelfRegistration.CallbackRegex";
@@ -121,15 +121,52 @@ public class PreferenceRetrievalClient {
     }
 
     /**
+     * Check if show username unavailability is enabled.
+     *
+     * @param tenant Tenant domain name.
+     * @return returns True if show username unavailability is enabled.
+     * @throws PreferenceRetrievalClientException If any PreferenceRetrievalClientException occurs.
+     */
+    public boolean checkSelfRegistrationShowUsernameUnavailability(String tenant)
+            throws PreferenceRetrievalClientException {
+
+        return checkPreference(tenant, SELF_SIGN_UP_CONNECTOR, SHOW_USERNAME_UNAVAILABILITY);
+    }
+
+    /**
      * Check username recovery is enabled or not.
      *
-     * @param tenant tenant domain name.
+     * @param tenantDomain tenant domain name.
      * @return returns true if  username recovery enabled.
-     * @throws PreferenceRetrievalClientException
+     * @throws PreferenceRetrievalClientException If any PreferenceRetrievalClientException occurs.
      */
-    public boolean checkUsernameRecovery(String tenant) throws PreferenceRetrievalClientException {
+    public boolean checkUsernameRecovery(String tenantDomain) throws PreferenceRetrievalClientException {
 
-        return checkPreference(tenant, RECOVERY_CONNECTOR, USERNAME_RECOVERY_PROPERTY);
+        return checkPreference(tenantDomain, RECOVERY_CONNECTOR, IdPManagementConstants.USERNAME_RECOVERY_PROPERTY);
+    }
+
+    /**
+     * Check email based username recovery is enabled or not.
+     *
+     * @param tenantDomain tenant domain name.
+     * @return returns true if email based username recovery enabled.
+     * @throws PreferenceRetrievalClientException If any PreferenceRetrievalClientException occurs.
+     */
+    public boolean checkEmailBasedUsernameRecovery(String tenantDomain) throws PreferenceRetrievalClientException {
+
+        return checkPreference(tenantDomain, RECOVERY_CONNECTOR, IdPManagementConstants.EMAIL_USERNAME_RECOVERY_PROPERTY);
+    }
+
+    /**
+     * Check SMS based username recovery is enabled or not.
+     *
+     * @param tenantDomain tenant domain name.
+     * @return returns true if SMS based username recovery enabled.
+     * @throws PreferenceRetrievalClientException If any PreferenceRetrievalClientException occurs.
+     */
+    public boolean checkSMSBasedUsernameRecovery(String tenantDomain) throws PreferenceRetrievalClientException {
+
+        return checkPreference(tenantDomain, RECOVERY_CONNECTOR, IdPManagementConstants.SMS_USERNAME_RECOVERY_PROPERTY);
     }
 
     /**
@@ -141,7 +178,33 @@ public class PreferenceRetrievalClient {
      */
     public boolean checkNotificationBasedPasswordRecovery(String tenant) throws PreferenceRetrievalClientException {
 
-        return checkPreference(tenant, RECOVERY_CONNECTOR, NOTIFICATION_PASSWORD_RECOVERY_PROPERTY);
+        return checkPreference(tenant, RECOVERY_CONNECTOR,
+                IdPManagementConstants.NOTIFICATION_PASSWORD_ENABLE_PROPERTY);
+    }
+
+    /**
+     * Check email link based password recovery is enabled or not.
+     *
+     * @param tenant Tenant domain name.
+     * @return Returns true if email link based password recovery enabled.
+     * @throws PreferenceRetrievalClientException PreferenceRetrievalClientException.
+     */
+    public boolean checkEmailLinkBasedPasswordRecovery(String tenant) throws PreferenceRetrievalClientException {
+
+        return checkPreference(tenant, RECOVERY_CONNECTOR,
+                IdPManagementConstants.EMAIL_LINK_PASSWORD_RECOVERY_PROPERTY);
+    }
+
+    /**
+     * Check SMS OTP based password recovery is enabled or not.
+     *
+     * @param tenant Tenant domain name.
+     * @return Returns true if SMS OTP based password recovery enabled.
+     * @throws PreferenceRetrievalClientException PreferenceRetrievalClientException.
+     */
+    public boolean checkSMSOTPBasedPasswordRecovery(String tenant) throws PreferenceRetrievalClientException {
+
+        return checkPreference(tenant, RECOVERY_CONNECTOR, IdPManagementConstants.SMS_OTP_PASSWORD_RECOVERY_PROPERTY);
     }
 
     /**
@@ -166,7 +229,7 @@ public class PreferenceRetrievalClient {
     public boolean checkPasswordRecovery(String tenant) throws PreferenceRetrievalClientException {
 
         List<String> propertyNameList = new ArrayList<String>();
-        propertyNameList.add(NOTIFICATION_PASSWORD_RECOVERY_PROPERTY);
+        propertyNameList.add(IdPManagementConstants.NOTIFICATION_PASSWORD_ENABLE_PROPERTY);
         propertyNameList.add(QUESTION_PASSWORD_RECOVERY_PROPERTY);
         return checkMultiplePreference(tenant, RECOVERY_CONNECTOR, propertyNameList);
     }

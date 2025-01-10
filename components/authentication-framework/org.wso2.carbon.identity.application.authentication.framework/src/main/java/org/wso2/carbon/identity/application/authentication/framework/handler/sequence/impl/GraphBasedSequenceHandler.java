@@ -31,12 +31,12 @@ import org.wso2.carbon.identity.application.authentication.framework.config.mode
 import org.wso2.carbon.identity.application.authentication.framework.config.model.StepConfig;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.AuthGraphNode;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.AuthenticationGraph;
-import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.BaseSerializableJsFunction;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.DynamicDecisionNode;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.EndStep;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.FailNode;
+import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.GenericSerializableJsFunction;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JsBaseGraphBuilder;
-import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JsBaseGraphBuilderFactory;
+import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JsGenericGraphBuilderFactory;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JsWrapperFactoryProvider;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.LongWaitNode;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.ShowPromptNode;
@@ -79,6 +79,7 @@ import static org.wso2.carbon.identity.application.authentication.framework.Auth
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.AdaptiveAuthentication.ADAPTIVE_AUTH_LONG_WAIT_TIMEOUT;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.BACK_TO_FIRST_STEP;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.JSAttributes.PROP_CURRENT_NODE;
+import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants.POLYGLOT_CLASS;
 import static org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils.promptOnLongWait;
 
 /**
@@ -142,8 +143,11 @@ public class GraphBasedSequenceHandler extends DefaultStepBasedSequenceHandler i
                         FrameworkConstants.LogConstants.AUTH_SCRIPT_LOGGING)
                         .inputParam(LogConstants.InputKeys.TENANT_DOMAIN, context.getTenantDomain())
                         .inputParam(LogConstants.InputKeys.APPLICATION_NAME, context.getServiceProviderName())
-                        .resultMessage("Error while parsing the authentication script. Nested exception is: " + graph
-                                .getErrorReason())
+                        .resultMessage((graph.getErrorReason() != null &&
+                                graph.getErrorReason().contains(POLYGLOT_CLASS)) ? "Error while parsing the " +
+                                "authentication script." :
+                                "Error while parsing the authentication script. Nested exception is: " + graph
+                                        .getErrorReason())
                         .logDetailLevel(DiagnosticLog.LogDetailLevel.APPLICATION)
                         .resultStatus(DiagnosticLog.ResultStatus.FAILED));
             }
@@ -266,7 +270,7 @@ public class GraphBasedSequenceHandler extends DefaultStepBasedSequenceHandler i
             context.setProperty(FrameworkConstants.JSAttributes.PROP_CURRENT_NODE, nextNode);
             context.setReturning(false);
         } else {
-            if (promptNode.getHandlerMap().get(ShowPromptNode.PRE_HANDLER) != null) {
+            if (promptNode.getGenericHandlerMap().get(ShowPromptNode.PRE_HANDLER) != null) {
                 Object result = evaluateHandler(ShowPromptNode.PRE_HANDLER, promptNode, context, promptNode
                         .getParameters().get(STEP_IDENTIFIER_PARAM));
                 if (Boolean.TRUE.equals(result)) {
@@ -749,7 +753,7 @@ public class GraphBasedSequenceHandler extends DefaultStepBasedSequenceHandler i
                     executeFunction("onSuccess", dynamicDecisionNode, context);
                     break;
                 case FAIL_COMPLETED:
-                    if (dynamicDecisionNode.getFunctionMap().get("onFail") != null) {
+                    if (dynamicDecisionNode.getGenericFunctionMap().get("onFail") != null) {
                         executeFunction("onFail", dynamicDecisionNode, context);
                     } else {
                         if (context.isRetrying()) {
@@ -778,9 +782,9 @@ public class GraphBasedSequenceHandler extends DefaultStepBasedSequenceHandler i
     private void executeFunction(String outcomeName, DynamicDecisionNode dynamicDecisionNode,
                                  AuthenticationContext context) {
 
-        BaseSerializableJsFunction fn = dynamicDecisionNode.getFunctionMap().get(outcomeName);
+        GenericSerializableJsFunction fn = dynamicDecisionNode.getGenericFunctionMap().get(outcomeName);
         FrameworkServiceDataHolder dataHolder = FrameworkServiceDataHolder.getInstance();
-        JsBaseGraphBuilderFactory jsGraphBuilderFactory = dataHolder.getJsGraphBuilderFactory();
+        JsGenericGraphBuilderFactory jsGraphBuilderFactory = dataHolder.getJsGenericGraphBuilderFactory();
         JsBaseGraphBuilder graphBuilder = jsGraphBuilderFactory.createBuilder(context, context
                 .getSequenceConfig().getAuthenticationGraph().getStepMap(), dynamicDecisionNode);
         graphBuilder.getScriptEvaluator(fn).evaluate(context, JsWrapperFactoryProvider.getInstance()
@@ -794,9 +798,9 @@ public class GraphBasedSequenceHandler extends DefaultStepBasedSequenceHandler i
     private void executeFunction(String outcomeName, DynamicDecisionNode dynamicDecisionNode,
                                  AuthenticationContext context, Map<String, Object> data) {
 
-        BaseSerializableJsFunction fn = dynamicDecisionNode.getFunctionMap().get(outcomeName);
+        GenericSerializableJsFunction fn = dynamicDecisionNode.getGenericFunctionMap().get(outcomeName);
         FrameworkServiceDataHolder dataHolder = FrameworkServiceDataHolder.getInstance();
-        JsBaseGraphBuilderFactory jsGraphBuilderFactory = dataHolder.getJsGraphBuilderFactory();
+        JsGenericGraphBuilderFactory jsGraphBuilderFactory = dataHolder.getJsGenericGraphBuilderFactory();
         JsBaseGraphBuilder jsGraphBuilder = jsGraphBuilderFactory.createBuilder(context, context
                 .getSequenceConfig().getAuthenticationGraph().getStepMap(), dynamicDecisionNode);
         jsGraphBuilder.getScriptEvaluator(fn).evaluate(context, JsWrapperFactoryProvider.getInstance()
@@ -811,9 +815,9 @@ public class GraphBasedSequenceHandler extends DefaultStepBasedSequenceHandler i
     private Object evaluateHandler(String outcomeName, ShowPromptNode dynamicDecisionNode,
                                    AuthenticationContext context, Object stepId) {
 
-        BaseSerializableJsFunction fn = dynamicDecisionNode.getHandlerMap().get(outcomeName);
+        GenericSerializableJsFunction fn = dynamicDecisionNode.getGenericHandlerMap().get(outcomeName);
         FrameworkServiceDataHolder dataHolder = FrameworkServiceDataHolder.getInstance();
-        JsBaseGraphBuilderFactory jsGraphBuilderFactory = dataHolder.getJsGraphBuilderFactory();
+        JsGenericGraphBuilderFactory jsGraphBuilderFactory = dataHolder.getJsGenericGraphBuilderFactory();
         JsBaseGraphBuilder graphBuilder = jsGraphBuilderFactory.createBuilder(context, context
                 .getSequenceConfig().getAuthenticationGraph().getStepMap(), dynamicDecisionNode);
         return graphBuilder.getScriptEvaluator(fn).evaluate(context, JsWrapperFactoryProvider.getInstance()

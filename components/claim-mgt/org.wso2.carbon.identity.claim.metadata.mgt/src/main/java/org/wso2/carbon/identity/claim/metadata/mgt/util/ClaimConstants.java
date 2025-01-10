@@ -36,11 +36,17 @@ public class ClaimConstants {
     public static final String READ_ONLY_PROPERTY = "ReadOnly";
     public static final String CLAIM_URI_PROPERTY = "ClaimURI";
     public static final String MASKING_REGULAR_EXPRESSION_PROPERTY = "MaskingRegEx";
+    public static final String CLAIM_UNIQUENESS_SCOPE_PROPERTY = "UniquenessScope";
+    public static final String IS_UNIQUE_CLAIM_PROPERTY = "isUnique";
+    public static final String UNIQUENESS_VALIDATION_SCOPE = "UserClaimUpdate.UniquenessValidation.ScopeWithinUserstore";
 
     public static final String DEFAULT_ATTRIBUTE = "DefaultAttribute";
     public static final String MAPPED_LOCAL_CLAIM_PROPERTY = "MappedLocalClaim";
+    public static final String EXCLUDED_USER_STORES_PROPERTY = "ExcludedUserStores";
     public static final String MIN_LENGTH = "minLength";
     public static final String MAX_LENGTH = "maxLength";
+    public static final String IS_SYSTEM_CLAIM = "isSystemClaim";
+    public static final String SHARED_PROFILE_VALUE_RESOLVING_METHOD = "SharedProfileValueResolvingMethod";
 
     /**
      * Enum for error messages.
@@ -87,7 +93,17 @@ public class ClaimConstants {
         ERROR_CODE_EXISTING_LOCAL_CLAIM_MAPPING("CMT-60004", "Local claim URI : %s is already mapped in claim " +
                 "dialect: %s"),
         ERROR_CODE_CLAIM_LENGTH_LIMIT("CMT-60005", "Claim property: %s should be between %s and %s"),
-
+        ERROR_CODE_NO_DELETE_SYSTEM_CLAIM("CMT-60006", "Cannot delete claim %s as it is a system claim"),
+        ERROR_CODE_NO_RENAME_SYSTEM_DIALECT("CMT-60007", "Cannot rename dialect %s as it is a system dialect"),
+        ERROR_CODE_NO_DELETE_SYSTEM_DIALECT("CMT-60008", "Cannot delete dialect %s as it is a system dialect"),
+        ERROR_CODE_INVALID_EXTERNAL_CLAIM_DIALECT_URI("CMT-60009", "Invalid external claim dialect URI: %s"),
+        ERROR_CODE_NON_EXISTING_EXTERNAL_CLAIM_URI("CMT-60010", "External claim URI: %s in dialect: %s does not exist."),
+        ERROR_CODE_NON_EXISTING_LOCAL_CLAIM("CMT-60011", "Local claim URI: %s  does not exist."),
+        ERROR_CODE_EXISTING_EXTERNAL_CLAIM("CMT-60012", "External claim URI: %s in dialect: %s already exists."),
+        ERROR_CODE_NO_SHARED_PROFILE_VALUE_RESOLVING_METHOD_CHANGE_FOR_SYSTEM_CLAIM("CMT-60013",
+                "Cannot change the shared profile value resolving method of the system claim: %s"),
+        ERROR_CODE_INVALID_SHARED_PROFILE_VALUE_RESOLVING_METHOD("CMT-60014",
+                "Invalid shared profile value resolving method: %s"),
         // Server Errors
         ERROR_CODE_DELETE_IDN_CLAIM_MAPPED_ATTRIBUTE("65001", "Error occurred while deleting claim " +
                 "mapped attributes for domain : %s with tenant Id : %s from table : IDN_CLAIM_MAPPED_ATTRIBUTE"),
@@ -109,6 +125,52 @@ public class ClaimConstants {
 
         public String getMessage() {
             return message;
+        }
+    }
+
+    /**
+     * Enum for claim uniqueness validation scopes.
+     */
+    public enum ClaimUniquenessScope {
+        NONE,
+        WITHIN_USERSTORE,
+        ACROSS_USERSTORES
+    }
+
+    /**
+     * Enum for shared profile value resolving methods.
+     */
+    public enum SharedProfileValueResolvingMethod {
+        FROM_SHARED_PROFILE("FromSharedProfile"),
+        FROM_ORIGIN("FromOrigin"),
+        FROM_FIRST_FOUND_IN_HIERARCHY("FromFirstFoundInHierarchy");
+
+        private final String name;
+
+        SharedProfileValueResolvingMethod(String name) {
+
+            this.name = name;
+        }
+
+        public String getName() {
+
+            return name;
+        }
+
+        /**
+         * Get the SharedProfileValueResolvingMethod from the name.
+         *
+         * @param name Name of the SharedProfileValueResolvingMethod.
+         * @return SharedProfileValueResolvingMethod name.
+         */
+        public static SharedProfileValueResolvingMethod fromName(String name) {
+
+            for (SharedProfileValueResolvingMethod method : SharedProfileValueResolvingMethod.values()) {
+                if (method.getName().equals(name)) {
+                    return method;
+                }
+            }
+            throw new IllegalArgumentException("Invalid value: " + name);
         }
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023, WSO2 LLC. (https://www.wso2.com).
+ * Copyright (c) 2023-2024, WSO2 LLC. (https://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -266,6 +266,11 @@ public class AuthenticationService {
     private String getErrorMessage(AuthServiceResponseWrapper response) throws AuthServiceException {
 
         Map<String, String> queryParams = AuthServiceUtils.extractQueryParams(response.getRedirectURL());
+
+        if (queryParams.containsKey(AuthServiceConstants.PASSWORD_EXPIRED_PARAM)
+                && queryParams.containsKey(AuthServiceConstants.PASSWORD_EXPIRED_MSG_PARAM)) {
+            return queryParams.get(AuthServiceConstants.PASSWORD_EXPIRED_MSG_PARAM);
+        }
         return queryParams.get(AuthServiceConstants.AUTH_FAILURE_MSG_PARAM);
     }
 
@@ -336,7 +341,7 @@ public class AuthenticationService {
             throws AuthServiceException {
 
         return AuthenticatorFlowStatus.FAIL_COMPLETED == request.getAuthFlowStatus() || response.isErrorResponse() ||
-                isSentToRetryPage(request);
+                isSentToRetryPage(request) || response.isPasswordExpiredResponse();
     }
 
     private boolean isAuthFlowIncomplete(AuthServiceRequestWrapper request) {
@@ -348,7 +353,7 @@ public class AuthenticationService {
 
         AuthenticationResult authenticationResult =
                 (AuthenticationResult) request.getAttribute(FrameworkConstants.RequestAttribute.AUTH_RESULT);
-        if (authenticationResult == null) {
+        if (authenticationResult == null && request.getSessionDataKey() != null) {
             AuthenticationResultCacheEntry authenticationResultCacheEntry =
                     FrameworkUtils.getAuthenticationResultFromCache(request.getSessionDataKey());
             if (authenticationResultCacheEntry != null) {
@@ -390,6 +395,13 @@ public class AuthenticationService {
                     AuthServiceConstants.ErrorMessage.ERROR_UNABLE_TO_FIND_APPLICATION.code(),
                     String.format(AuthServiceConstants.ErrorMessage.ERROR_UNABLE_TO_FIND_APPLICATION.description(),
                             clientId, tenantDomain));
+        }
+
+        // Check if the application is enabled to proceed with authentication.
+        if (!serviceProvider.isApplicationEnabled()) {
+            throw new AuthServiceClientException(
+                    AuthServiceConstants.ErrorMessage.ERROR_DISABLED_APPLICATION.code(),
+                    AuthServiceConstants.ErrorMessage.ERROR_DISABLED_APPLICATION.description());
         }
 
         // Check whether api based authentication is enabled for the SP.
@@ -526,6 +538,8 @@ public class AuthenticationService {
                 return AuthServiceConstants.ErrorMessage.ERROR_AUTHENTICATION_FLOW_TIMEOUT;
             case FrameworkConstants.ERROR_STATUS_AUTH_CONTEXT_NULL:
                 return AuthServiceConstants.ErrorMessage.ERROR_AUTHENTICATION_CONTEXT_NULL;
+            case FrameworkConstants.ERROR_STATUS_APP_DISABLED:
+                return AuthServiceConstants.ErrorMessage.ERROR_DISABLED_APPLICATION;
             default:
                 return null;
         }

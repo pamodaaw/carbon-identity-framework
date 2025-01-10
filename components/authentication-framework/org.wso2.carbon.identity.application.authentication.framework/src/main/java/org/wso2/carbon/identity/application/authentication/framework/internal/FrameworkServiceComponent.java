@@ -49,8 +49,8 @@ import org.wso2.carbon.identity.application.authentication.framework.config.buil
 import org.wso2.carbon.identity.application.authentication.framework.config.loader.UIBasedConfigurationLoader;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.AuthenticatorConfig;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JSExecutionSupervisor;
-import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JsBaseGraphBuilderFactory;
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JsFunctionRegistryImpl;
+import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.JsGenericGraphBuilderFactory;
 import org.wso2.carbon.identity.application.authentication.framework.dao.impl.CacheBackedLongWaitStatusDAO;
 import org.wso2.carbon.identity.application.authentication.framework.dao.impl.LongWaitStatusDAOImpl;
 import org.wso2.carbon.identity.application.authentication.framework.exception.FrameworkException;
@@ -99,6 +99,7 @@ import org.wso2.carbon.identity.application.common.model.LocalAuthenticatorConfi
 import org.wso2.carbon.identity.application.common.model.Property;
 import org.wso2.carbon.identity.application.common.model.RequestPathAuthenticatorConfig;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
+import org.wso2.carbon.identity.base.AuthenticatorPropertyConstants.DefinedByType;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataManagementService;
 import org.wso2.carbon.identity.configuration.mgt.core.ConfigurationManager;
 import org.wso2.carbon.identity.core.handler.HandlerComparator;
@@ -110,6 +111,7 @@ import org.wso2.carbon.identity.multi.attribute.login.mgt.MultiAttributeLoginSer
 import org.wso2.carbon.identity.organization.management.service.OrganizationManagementInitialize;
 import org.wso2.carbon.identity.organization.management.service.OrganizationManager;
 import org.wso2.carbon.identity.role.v2.mgt.core.RoleManagementService;
+import org.wso2.carbon.identity.secret.mgt.core.SecretResolveManager;
 import org.wso2.carbon.identity.user.profile.mgt.association.federation.FederatedAssociationManager;
 import org.wso2.carbon.idp.mgt.IdpManager;
 import org.wso2.carbon.idp.mgt.listener.IdentityProviderMgtListener;
@@ -149,6 +151,7 @@ public class FrameworkServiceComponent {
     private HttpService httpService;
     private ConsentMgtPostAuthnHandler consentMgtPostAuthnHandler = new ConsentMgtPostAuthnHandler();
     private String requireCode;
+    private String secretsCode;
 
     public static RealmService getRealmService() {
 
@@ -276,12 +279,13 @@ public class FrameworkServiceComponent {
         UIBasedConfigurationLoader uiBasedConfigurationLoader = new UIBasedConfigurationLoader();
         dataHolder.setSequenceLoader(uiBasedConfigurationLoader);
 
-        JsBaseGraphBuilderFactory jsGraphBuilderFactory = FrameworkUtils.createJsGraphBuilderFactoryFromConfig();
+        JsGenericGraphBuilderFactory jsGraphBuilderFactory =
+                FrameworkUtils.createJsGenericGraphBuilderFactoryFromConfig();
         if (jsGraphBuilderFactory != null) {
             bundleContext.registerService(JsFunctionRegistry.class, dataHolder.getJsFunctionRegistry(), null);
             dataHolder.setAdaptiveAuthenticationAvailable(true);
             jsGraphBuilderFactory.init();
-            dataHolder.setJsGraphBuilderFactory(jsGraphBuilderFactory);
+            dataHolder.setJsGenericGraphBuilderFactory(jsGraphBuilderFactory);
         } else {
             dataHolder.setAdaptiveAuthenticationAvailable(false);
             log.warn("Adaptive authentication is disabled.");
@@ -347,6 +351,7 @@ public class FrameworkServiceComponent {
          * Load and reade the require.js file in resources.
          */
         this.loadCodeForRequire();
+        this.loadCodeForSecrets();
 
         // Check whether the TENANT_ID column is available in the IDN_FED_AUTH_SESSION_MAPPING table.
         FrameworkUtils.checkIfTenantIdColumnIsAvailableInFedAuthTable();
@@ -504,6 +509,7 @@ public class FrameworkServiceComponent {
             localAuthenticatorConfig.setTags(getTags(authenticator));
             AuthenticatorConfig fileBasedConfig = getAuthenticatorConfig(authenticator.getName());
             localAuthenticatorConfig.setEnabled(fileBasedConfig.isEnabled());
+            localAuthenticatorConfig.setDefinedByType(DefinedByType.SYSTEM);
             ApplicationAuthenticatorService.getInstance().addLocalAuthenticator(localAuthenticatorConfig);
         } else if (authenticator instanceof FederatedApplicationAuthenticator) {
             FederatedAuthenticatorConfig federatedAuthenticatorConfig = new FederatedAuthenticatorConfig();
@@ -511,6 +517,7 @@ public class FrameworkServiceComponent {
             federatedAuthenticatorConfig.setProperties(configProperties);
             federatedAuthenticatorConfig.setDisplayName(authenticator.getFriendlyName());
             federatedAuthenticatorConfig.setTags(getTags(authenticator));
+            federatedAuthenticatorConfig.setDefinedByType(DefinedByType.SYSTEM);
             ApplicationAuthenticatorService.getInstance().addFederatedAuthenticator(federatedAuthenticatorConfig);
         } else if (authenticator instanceof RequestPathApplicationAuthenticator) {
             RequestPathAuthenticatorConfig reqPathAuthenticatorConfig = new RequestPathAuthenticatorConfig();
@@ -520,6 +527,7 @@ public class FrameworkServiceComponent {
             reqPathAuthenticatorConfig.setTags(getTags(authenticator));
             AuthenticatorConfig fileBasedConfig = getAuthenticatorConfig(authenticator.getName());
             reqPathAuthenticatorConfig.setEnabled(fileBasedConfig.isEnabled());
+            reqPathAuthenticatorConfig.setDefinedByType(DefinedByType.SYSTEM);
             ApplicationAuthenticatorService.getInstance().addRequestPathAuthenticator(reqPathAuthenticatorConfig);
         }
 
@@ -801,7 +809,7 @@ public class FrameworkServiceComponent {
     @Reference(
             name = "approles.resolver.service",
             service = ApplicationRolesResolver.class,
-            cardinality = ReferenceCardinality.OPTIONAL,
+            cardinality = ReferenceCardinality.MULTIPLE,
             policy = ReferencePolicy.DYNAMIC,
             unbind = "unsetAppRolesResolverService"
     )
@@ -849,6 +857,29 @@ public class FrameworkServiceComponent {
         FrameworkServiceDataHolder.getInstance().setFunctionLibraryManagementService(functionLibraryManagementService);
     }
 
+    @Reference(
+            name = "secret.config.manager",
+            service = SecretResolveManager.class,
+            cardinality = ReferenceCardinality.MANDATORY,
+            policy = ReferencePolicy.DYNAMIC,
+            unbind = "unsetSecretConfigManager"
+    )
+    protected void setSecretConfigManager(SecretResolveManager secretConfigManager) {
+
+        if (log.isDebugEnabled()) {
+            log.debug("Secret Config Manager is set from functions");
+        }
+        FrameworkServiceDataHolder.getInstance().setSecretConfigManager(secretConfigManager);
+    }
+
+    protected void unsetSecretConfigManager(SecretResolveManager secretConfigManager) {
+
+        if (log.isDebugEnabled()) {
+            log.debug("Secret Config Manager is unset from functions");
+        }
+        FrameworkServiceDataHolder.getInstance().setSecretConfigManager(null);
+    }
+
     protected void unsetFunctionLibraryManagementService
             (FunctionLibraryManagementService functionLibraryManagementService) {
 
@@ -861,6 +892,11 @@ public class FrameworkServiceComponent {
     public static FunctionLibraryManagementService getFunctionLibraryManagementService() {
 
         return FrameworkServiceDataHolder.getInstance().getFunctionLibraryManagementService();
+    }
+
+    public static SecretResolveManager getSecretConfigManager() {
+
+        return FrameworkServiceDataHolder.getInstance().getSecretConfigManager();
     }
 
     /**
@@ -876,6 +912,21 @@ public class FrameworkServiceComponent {
         } catch (IOException e) {
             log.error("Failed to read require.js file. Therefore, require() function doesn't support in" +
                     "adaptive authentication scripts.", e);
+        }
+    }
+
+    /**
+     * Load and read the JS function in secrets.js file.
+     */
+    private void loadCodeForSecrets() {
+
+        try {
+            ClassLoader loader = FrameworkServiceComponent.class.getClassLoader();
+            InputStream resourceStream = loader.getResourceAsStream("js/secrets.js");
+            secretsCode = IOUtils.toString(resourceStream);
+            FrameworkServiceDataHolder.getInstance().setCodeForSecretsFunction(secretsCode);
+        } catch (IOException e) {
+            log.error("Secrets object for secret resolution will not be available for adaptive auth scripts.", e);
         }
     }
 

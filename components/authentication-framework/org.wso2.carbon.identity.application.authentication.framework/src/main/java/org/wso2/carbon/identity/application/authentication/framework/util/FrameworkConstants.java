@@ -24,6 +24,7 @@ package org.wso2.carbon.identity.application.authentication.framework.util;
 public abstract class FrameworkConstants {
 
     public static final String SESSION_DATA_KEY = "sessionDataKey";
+    public static final String SECRET_TYPE = "ADAPTIVE_AUTH_CALL_CHOREO";
     public static final String QUERY_PARAMS = "commonAuthQueryParams";
     public static final String SUBJECT = "subject";
     public static final String DEFAULT_SEQUENCE = "default";
@@ -142,6 +143,8 @@ public abstract class FrameworkConstants {
     public static final String IDP_RESOURCE_ID = "IDPResourceID";
     public static final String ENABLE_JIT_PROVISION_ENHANCE_FEATURE = "JITProvisioning.EnableEnhancedFeature";
     public static final String ERROR_CODE_INVALID_ATTRIBUTE_UPDATE = "SUO-10000";
+    public static final String ENABLE_CONFIGURED_IDP_SUB_FOR_FEDERATED_USER_ASSOCIATION
+            = "JITProvisioning.EnableConfiguredIdpSubForFederatedUserAssociation";
 
     // Error details sent from authenticators
     public static final String AUTH_ERROR_CODE = "AuthErrorCode";
@@ -152,6 +155,7 @@ public abstract class FrameworkConstants {
     public static final String ORGANIZATION_USER_PROPERTIES = "ORGANIZATION_USER_PROPERTIES";
     public static final String ORGANIZATION_AUTHENTICATOR = "OrganizationAuthenticator";
     public static final String ORGANIZATION_LOGIN_HOME_REALM_IDENTIFIER = "OrganizationSSO";
+    public static final String ORGANIZATION_LOGIN_IDP_NAME = "SSO";
     public static final String ORG_ID_PARAMETER = "orgId";
     public static final String USER_ORGANIZATION_CLAIM = "user_organization";
     public static final String SESSION_AUTH_HISTORY = "SESSION_AUTH_HISTORY";
@@ -228,6 +232,8 @@ public abstract class FrameworkConstants {
     public static final String THREAD_LOCAL_SCRIPT_ENGINE_CONFIG = "AdaptiveAuth.LimitScriptEngineCreation";
     public static final String OPENJDK_NASHORN = "openjdkNashorn";
     public static final String NASHORN = "nashorn";
+    public static final String GRAAL_JS = "graaljs";
+    public static final String POLYGLOT_CLASS = "org.graalvm.polyglot";
 
     // Attribute sync related constants.
     public static final String ATTRIBUTE_SYNC_METHOD = "attributeSyncMethod";
@@ -249,6 +255,8 @@ public abstract class FrameworkConstants {
     public static final String ERROR_DESCRIPTION_AUTH_CONTEXT_NULL = "authentication.context.null.description";
     public static final String ERROR_STATUS_AUTH_FLOW_TIMEOUT = "authentication.flow.timeout";
     public static final String ERROR_DESCRIPTION_AUTH_FLOW_TIMEOUT = "authentication.flow.timeout.description";
+    public static final String ERROR_STATUS_APP_DISABLED = "authentication.flow.app.disabled";
+    public static final String ERROR_DESCRIPTION_APP_DISABLED = "authentication.flow.app.disabled.description";
     public static final String IS_SENT_TO_RETRY = "isSentToRetry";
     public static final String CONTEXT_IDENTIFIER = "contextIdentifier";
     public static final String REQ_ATTR_RETRY_STATUS = "retryStatus";
@@ -596,6 +604,7 @@ public abstract class FrameworkConstants {
         public static final String JS_FUNC_SEND_ERROR = "sendError";
         public static final String JS_RETRY_STEP = "retry";
         public static final String JS_FUNC_LOAD_FUNC_LIB = "loadLocalLibrary";
+        public static final String JS_FUNC_GET_SECRET_BY_NAME = "getSecretByName";
         public static final String JS_AUTH_FAILURE = "fail";
         public static final String JS_ENDPOINT_PARAMS = "endpointParams";
 
@@ -608,6 +617,11 @@ public abstract class FrameworkConstants {
         public static final String SUBJECT_IDENTIFIER_PARAM = "markAsSubjectIdentifierStep";
         public static final String SUBJECT_ATTRIBUTE_PARAM = "markAsSubjectAttributeStep";
         public static final String SKIP_PROMPT = "skipPrompt";
+
+        public static final String POLYGLOT_SOURCE = "src.js";
+        public static final String POLYGLOT_LANGUAGE = "js";
+        public static final String GRAALJS = "graaljs";
+        public static final String NASHORN = "nashorn";
     }
 
     /**
@@ -667,6 +681,9 @@ public abstract class FrameworkConstants {
                 = "AdaptiveAuthExecutionSupervisorResult";
         public static final String AUTHENTICATOR_NAME_IN_AUTH_CONFIG
                 = "AdaptiveAuth.AuthenticatorNameInAuthConfig.Enable";
+        public static final String GRAALJS_SCRIPT_STATEMENTS_LIMIT
+                = "AdaptiveAuth.GraalJS.ScriptStatementsLimit";
+        public static final int DEFAULT_GRAALJS_SCRIPT_STATEMENTS_LIMIT = 0;
     }
 
     /**

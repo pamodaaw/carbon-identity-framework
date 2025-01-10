@@ -48,6 +48,7 @@ import org.wso2.carbon.identity.application.common.model.IdentityProvider;
 import org.wso2.carbon.identity.application.common.model.ServiceProvider;
 import org.wso2.carbon.identity.application.mgt.ApplicationConstants;
 import org.wso2.carbon.identity.base.IdentityConstants;
+import org.wso2.carbon.identity.central.log.mgt.utils.LogConstants;
 import org.wso2.carbon.identity.central.log.mgt.utils.LoggerUtils;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataHandler;
 import org.wso2.carbon.identity.claim.metadata.mgt.exception.ClaimMetadataException;
@@ -60,6 +61,7 @@ import org.wso2.carbon.user.core.UserRealm;
 import org.wso2.carbon.user.core.UserStoreManager;
 import org.wso2.carbon.user.core.common.AbstractUserStoreManager;
 import org.wso2.carbon.user.core.service.RealmService;
+import org.wso2.carbon.user.core.util.UserCoreUtil;
 import org.wso2.carbon.utils.DiagnosticLog;
 
 import java.util.ArrayList;
@@ -296,9 +298,12 @@ public class DefaultClaimHandler implements ClaimHandler {
                                 serviceProviderMappedUserRoles : StringUtils.EMPTY);
             }
             if (CollectionUtils.isNotEmpty(federatedUserRolesUnmappedExclusive)) {
+                Set<String> federatedUserRolesUnmappedInclusiveSetWithoutDomain =
+                        federatedUserRolesUnmappedExclusive.stream().map(UserCoreUtil::removeDomainFromName)
+                                .collect(Collectors.toSet());
                 localUnfilteredClaims.put(FrameworkConstants.APP_ROLES_CLAIM,
                         String.join(FrameworkUtils.getMultiAttributeSeparator(),
-                                federatedUserRolesUnmappedExclusive));
+                                federatedUserRolesUnmappedInclusiveSetWithoutDomain));
             }
         }
 
@@ -359,6 +364,17 @@ public class DefaultClaimHandler implements ClaimHandler {
                     // Get roles claim from the user attributes.
                     String rolesClaim = remoteClaims.get(localToIdPClaimMap.get(FrameworkConstants.ROLES_CLAIM));
                     spFilteredClaims.put(FrameworkConstants.IDP_MAPPED_USER_ROLES, rolesClaim);
+                    spFilteredClaims.put(FrameworkConstants.USER_ORGANIZATION_CLAIM, stepConfig.getAuthenticatedUser()
+                            .getUserResidentOrganization());
+                    if (CarbonConstants.ENABLE_LEGACY_AUTHZ_RUNTIME) {
+                        String appRolesClaim = localToIdPClaimMap.get(FrameworkConstants.APP_ROLES_CLAIM);
+                        if (StringUtils.isNotBlank(appRolesClaim)) {
+                            String appRolesClaimValue = remoteClaims.get(appRolesClaim);
+                            if (StringUtils.isNotBlank(appRolesClaimValue)) {
+                                spFilteredClaims.putIfAbsent(appRolesClaim, appRolesClaimValue);
+                            }
+                        }
+                    }
                 } else {
                     spFilteredClaims.put(FrameworkConstants.IDP_MAPPED_USER_ROLES, StringUtils.EMPTY);
                 }
@@ -409,6 +425,11 @@ public class DefaultClaimHandler implements ClaimHandler {
         ServiceProvider serviceProvider = context.getSequenceConfig().getApplicationConfig().getServiceProvider();
         if (serviceProvider == null) {
             return null;
+        }
+        /* Application and user should be in same tenant domain in order to match the application assigned roles for
+            the user. */
+        if (!StringUtils.equals(serviceProvider.getTenantDomain(), authenticatedUser.getTenantDomain())) {
+            return new ArrayList<>();
         }
         String applicationId = serviceProvider.getApplicationResourceId();
         return FrameworkUtils.getAppAssociatedRolesOfLocalUser(authenticatedUser, applicationId);
@@ -511,6 +532,7 @@ public class DefaultClaimHandler implements ClaimHandler {
                 LoggerUtils.triggerDiagnosticLogEvent(new DiagnosticLog.DiagnosticLogBuilder(
                         FrameworkConstants.LogConstants.AUTHENTICATION_FRAMEWORK,
                         FrameworkConstants.LogConstants.ActionIDs.HANDLE_CLAIM_MAPPING)
+                        .inputParam(LogConstants.InputKeys.APPLICATION_NAME, appConfig.getApplicationName())
                         .resultMessage("Handling service provider requested claims.")
                         .logDetailLevel(DiagnosticLog.LogDetailLevel.APPLICATION)
                         .resultStatus(DiagnosticLog.ResultStatus.SUCCESS));
@@ -761,8 +783,11 @@ public class DefaultClaimHandler implements ClaimHandler {
                             appAssociatedRoles));
                 }
                 if (isAppRoleClaimRequested) {
+                    List<String> appAssociatedRolesWithoutDomain = appAssociatedRoles.stream()
+                            .map(UserCoreUtil::removeDomainFromName)
+                            .collect(Collectors.toList());;
                     allLocalClaims.put(FrameworkConstants.APP_ROLES_CLAIM, String.join(FrameworkUtils
-                            .getMultiAttributeSeparator(), appAssociatedRoles));
+                            .getMultiAttributeSeparator(), appAssociatedRolesWithoutDomain));
                 }
             } else {
                 if (isRoleClaimRequested && !Boolean.parseBoolean(IdentityUtil.getProperty(
@@ -953,8 +978,8 @@ public class DefaultClaimHandler implements ClaimHandler {
                         authenticatedUser.getLoggableUserId() + " in " + tenantDomain, e);
             }
         } catch (UserIdNotFoundException e) {
-            throw new FrameworkException("User id is not available for user: " + authenticatedUser.getLoggableUserId(),
-                    e);
+            throw new FrameworkException("User id is not available for user: " +
+                    authenticatedUser.getLoggableMaskedUserId(), e);
         }
         return allLocalClaims;
     }
@@ -1133,7 +1158,7 @@ public class DefaultClaimHandler implements ClaimHandler {
             log.error("Error occurred while retrieving " + subjectURI + " claim value for user "
                             + authenticatedUser.getLoggableUserId(), e);
         } catch (UserIdNotFoundException e) {
-            log.error("User id is not available for user: " + authenticatedUser.getLoggableUserId(), e);
+            log.error("User id is not available for user: " + authenticatedUser.getLoggableMaskedUserId(), e);
         }
     }
 
