@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,19 +16,21 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
+package org.wso2.carbon.identity.user.self.registration.executor.impl;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.core.util.IdentityTenantUtil;
 import org.wso2.carbon.identity.core.util.IdentityUtil;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationClientException;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationServerException;
+import org.wso2.carbon.identity.user.self.registration.executor.RegistrationExecutor;
 import org.wso2.carbon.identity.user.self.registration.internal.UserRegistrationServiceDataHolder;
+import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
+import org.wso2.carbon.identity.user.self.registration.model.InitData;
 import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationRequestedUser;
@@ -42,25 +44,10 @@ import static org.wso2.carbon.identity.user.self.registration.util.Constants.Err
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.PASSWORD;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_USER_CREATED;
 
-/**
- * Implementation of a node specific to onboarding the user.
- */
-public class UserOnboardNode extends AbstractNode {
-
-    private static final Log LOG = LogFactory.getLog(UserOnboardNode.class);
-
-    public UserOnboardNode() {
-
-        super();
-    }
-
-    public UserOnboardNode(String id) {
-
-        super(id);
-    }
+public class UserOnboardingExecutor implements RegistrationExecutor {
 
     @Override
-    public NodeResponse execute(RegistrationContext context) throws RegistrationFrameworkException {
+    public ExecutorResponse execute(RegistrationContext context) throws RegistrationFrameworkException {
 
         String tenantDomain = context.getTenantDomain();
         updateUserProfile(context);
@@ -99,7 +86,7 @@ public class UserOnboardNode extends AbstractNode {
             Optional<String> userAssertion = Optional.ofNullable(userid);
             context.setUserId(userid);
             userAssertion.ifPresent(context::setUserAssertion);
-            return new NodeResponse(STATUS_USER_CREATED);
+            return new ExecutorResponse(STATUS_USER_CREATED);
         } catch (UserStoreException e) {
             throw new RegistrationServerException(ERROR_ONBOARDING_USER.getCode(),
                                                   ERROR_ONBOARDING_USER.getMessage(),
@@ -132,5 +119,17 @@ public class UserOnboardNode extends AbstractNode {
                 }
             }
         });
+    }
+
+    @Override
+    public String getName() {
+
+        return "user-onboarding-executor";
+    }
+
+    @Override
+    public List<InitData> getInitData() {
+
+        return List.of();
     }
 }

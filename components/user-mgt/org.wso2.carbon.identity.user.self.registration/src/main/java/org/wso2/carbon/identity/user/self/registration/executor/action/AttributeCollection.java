@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.action;
+package org.wso2.carbon.identity.user.self.registration.executor.action;
 
 import org.wso2.carbon.identity.user.self.registration.executor.Executor;
 import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
@@ -24,23 +24,22 @@ import org.wso2.carbon.identity.user.self.registration.model.InitData;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 /**
- * An interface for authentication.
+ * Interface for attribute collection.
  */
-public interface Authentication extends Executor {
+public interface AttributeCollection extends Executor {
 
     /**
-     * Perform an authenticate action with the given input and update the context.
+     * Perform attribute collection from the given input and update the context.
      *
      * @param context Registration context.
-     * @return ExecutorResponse.
+     * @return  ExecutorResponse.
      */
-    ExecutorResponse authenticate(RegistrationContext context);
+    ExecutorResponse collect(RegistrationContext context);
 
     /**
-     * Get the initial data required for authentication.
+     * Get the initial data required for attribute collection.
      *
-     * @return initial data required for authentication.
+     * @return initial data required for attribute collection.
      */
-    InitData getAuthInitData();
-
+    InitData getAttrCollectInitData();
 }

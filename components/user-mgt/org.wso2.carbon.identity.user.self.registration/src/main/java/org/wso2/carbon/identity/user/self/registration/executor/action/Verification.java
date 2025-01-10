@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.action;
+package org.wso2.carbon.identity.user.self.registration.executor.action;
 
 import org.wso2.carbon.identity.user.self.registration.executor.Executor;
 import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
@@ -24,22 +24,22 @@ import org.wso2.carbon.identity.user.self.registration.model.InitData;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 /**
- * Interface for attribute collection.
+ * Interface for verification.
  */
-public interface AttributeCollection extends Executor {
+public interface Verification extends Executor {
 
     /**
-     * Perform attribute collection from the given input and update the context.
+     * Perform a verification action with the given input and update the context.
      *
      * @param context Registration context.
-     * @return  ExecutorResponse.
+     * @return ExecutorResponse.
      */
-    ExecutorResponse collect(RegistrationContext context);
+    ExecutorResponse verify(RegistrationContext context);
 
     /**
-     * Get the initial data required for attribute collection.
+     * Get the initial data required for verification.
      *
-     * @return initial data required for attribute collection.
+     * @return initial data required for verification.
      */
-    InitData getAttrCollectInitData();
+    InitData getVerificationInitData();
 }

@@ -35,7 +35,6 @@ public class InputMetaData {
     private int order;
     private String validationRegex;
     private String i18nKey;
-    private List<Object> options = new ArrayList<>();
 
     public InputMetaData(String id, String name, String dataType, int order) {
 
@@ -133,15 +132,5 @@ public class InputMetaData {
     public void setI18nKey(String i18nKey) {
 
         this.i18nKey = i18nKey;
-    }
-
-    public List<Object> getOptions() {
-
-        return options;
-    }
-
-    public void addOption(Object option) {
-
-        this.options.add(option);
     }
 }

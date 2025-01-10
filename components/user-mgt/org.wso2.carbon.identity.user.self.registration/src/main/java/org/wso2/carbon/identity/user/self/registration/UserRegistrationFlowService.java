@@ -28,7 +28,7 @@ import org.wso2.carbon.identity.user.self.registration.model.InputData;
 import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.model.RegSequence;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
-import org.wso2.carbon.identity.user.self.registration.temp.AuthBasedSequenceLoader;
+import org.wso2.carbon.identity.user.self.registration.temp.SequenceManager;
 import org.wso2.carbon.identity.user.self.registration.util.RegistrationFrameworkUtils;
 
 import java.util.List;
@@ -62,7 +62,7 @@ public class UserRegistrationFlowService {
 
         String flowId = UUID.randomUUID().toString();
         RegistrationContext context = new RegistrationContext();
-        RegSequence sequence = new AuthBasedSequenceLoader().loadSequence(appId);
+        RegSequence sequence = new SequenceManager().loadSequence(appId);
         // todo resolve the tenant.
         context.setTenantDomain("carbon.super");
         context.setRegSequence(sequence);
@@ -130,12 +130,12 @@ public class UserRegistrationFlowService {
                 return false;
             }
 
-            // Return false if the given option is not in the list of provided options.
-            List<Object> providedOptions = metaData.getOptions();
-            if (providedOptions != null && !providedOptions.isEmpty() &&
-                    !providedOptions.contains(inputs.get(metaData.getName()))) {
-                return false;
-            }
+//            // Return false if the given option is not in the list of provided options.
+//            List<Object> providedOptions = metaData.getOptions();
+//            if (providedOptions != null && !providedOptions.isEmpty() &&
+//                    !providedOptions.contains(inputs.get(metaData.getName()))) {
+//                return false;
+//            }
         }
 
         return true;

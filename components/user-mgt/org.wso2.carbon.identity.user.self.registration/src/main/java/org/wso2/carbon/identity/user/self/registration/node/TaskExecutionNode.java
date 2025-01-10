@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
+package org.wso2.carbon.identity.user.self.registration.node;
 
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.ErrorMessages.ERROR_EXECUTOR_NOT_FOUND;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.ErrorMessages.ERROR_EXECUTOR_UNHANDLED_DATA;
@@ -26,18 +26,15 @@ import static org.wso2.carbon.identity.user.self.registration.util.Constants.STA
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NODE_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NEXT_ACTION_PENDING;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_VERIFICATION_REQUIRED;
-import java.util.List;
 import java.util.Optional;
-import org.wso2.carbon.identity.user.self.registration.action.Authentication;
+import org.wso2.carbon.identity.user.self.registration.executor.action.Authentication;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
-import org.wso2.carbon.identity.user.self.registration.action.AttributeCollection;
-import org.wso2.carbon.identity.user.self.registration.action.CredentialEnrollment;
+import org.wso2.carbon.identity.user.self.registration.executor.action.AttributeCollection;
+import org.wso2.carbon.identity.user.self.registration.executor.action.CredentialEnrollment;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationServerException;
 import org.wso2.carbon.identity.user.self.registration.executor.Executor;
-import org.wso2.carbon.identity.user.self.registration.action.Verification;
+import org.wso2.carbon.identity.user.self.registration.executor.action.Verification;
 import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
-import org.wso2.carbon.identity.user.self.registration.model.InitData;
-import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationRequestedUser;
@@ -45,7 +42,7 @@ import org.wso2.carbon.identity.user.self.registration.model.RegistrationRequest
 /**
  * Implementation of a node specific to executing a registration executor.
  */
-public class TaskExecutionNode extends AbstractNode implements InputCollectionNode {
+public class TaskExecutionNode extends AbstractNode {
 
     private final Executor executor;
 
@@ -87,17 +84,6 @@ public class TaskExecutionNode extends AbstractNode implements InputCollectionNo
             context.addAuthenticatedMethod(executor.getName());
         }
         return nodeResponse;
-    }
-
-    @Override
-    public List<InputMetaData> getRequiredData() {
-
-        if (executor != null && executor instanceof AttributeCollection) {
-            AttributeCollection attributeCollection = (AttributeCollection) executor;
-            InitData response = attributeCollection.getAttrCollectInitData();
-            return response.getRequiredData();
-        }
-        return null;
     }
 
     private NodeResponse triggerExecutor(RegistrationContext context)

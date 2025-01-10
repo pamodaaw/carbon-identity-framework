@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,10 +16,8 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
+package org.wso2.carbon.identity.user.self.registration.node;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
@@ -33,18 +31,15 @@ public abstract class AbstractNode implements Node {
     private final String id;
     private String nextNodeId;
     private String previousNodeId;
-    private Map<String, String> pageIds;
 
     public AbstractNode() {
 
         this.id = UUID.randomUUID().toString();
-        pageIds = new HashMap<>();
     }
 
     public AbstractNode(String id) {
 
         this.id = id;
-        pageIds = new HashMap<>();
     }
 
     @Override

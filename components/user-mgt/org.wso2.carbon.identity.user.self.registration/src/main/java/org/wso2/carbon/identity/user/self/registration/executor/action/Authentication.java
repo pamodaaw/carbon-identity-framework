@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.action;
+package org.wso2.carbon.identity.user.self.registration.executor.action;
 
 import org.wso2.carbon.identity.user.self.registration.executor.Executor;
 import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
@@ -24,22 +24,23 @@ import org.wso2.carbon.identity.user.self.registration.model.InitData;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
 /**
- * An interface for credential enrollment.
+ * An interface for authentication.
  */
-public interface CredentialEnrollment extends Executor {
+public interface Authentication extends Executor {
 
     /**
-     * Perform a credential enrollment action with the given input and update the context.
+     * Perform an authenticate action with the given input and update the context.
      *
      * @param context Registration context.
      * @return ExecutorResponse.
      */
-    ExecutorResponse enrollCredential(RegistrationContext context);
+    ExecutorResponse authenticate(RegistrationContext context);
 
     /**
-     * Get the initial data required for credential enrollment.
+     * Get the initial data required for authentication.
      *
-     * @return initial data required for credential enrollment.
+     * @return initial data required for authentication.
      */
-    InitData getCredentialEnrollmentInitData();
+    InitData getAuthInitData();
+
 }

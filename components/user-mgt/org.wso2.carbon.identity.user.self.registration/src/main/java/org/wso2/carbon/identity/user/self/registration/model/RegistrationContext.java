@@ -18,7 +18,7 @@
 
 package org.wso2.carbon.identity.user.self.registration.model;
 
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.Node;
+import org.wso2.carbon.identity.user.self.registration.node.Node;
 
 import java.io.Serializable;
 import java.util.ArrayList;

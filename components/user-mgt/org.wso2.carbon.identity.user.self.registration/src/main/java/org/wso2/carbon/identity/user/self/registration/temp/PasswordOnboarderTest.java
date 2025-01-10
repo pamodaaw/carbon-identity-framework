@@ -22,9 +22,9 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.wso2.carbon.identity.user.self.registration.action.AttributeCollection;
-import org.wso2.carbon.identity.user.self.registration.action.Authentication;
-import org.wso2.carbon.identity.user.self.registration.action.CredentialEnrollment;
+import org.wso2.carbon.identity.user.self.registration.executor.action.AttributeCollection;
+import org.wso2.carbon.identity.user.self.registration.executor.action.Authentication;
+import org.wso2.carbon.identity.user.self.registration.executor.action.CredentialEnrollment;
 import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
 import org.wso2.carbon.identity.user.self.registration.model.InitData;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
@@ -34,7 +34,6 @@ import static org.wso2.carbon.identity.user.self.registration.util.Constants.PAS
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ACTION_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_CRED_REQUIRED;
-import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NEXT_ACTION_PENDING;
 
 public class PasswordOnboarderTest implements Authentication, AttributeCollection, CredentialEnrollment {
 

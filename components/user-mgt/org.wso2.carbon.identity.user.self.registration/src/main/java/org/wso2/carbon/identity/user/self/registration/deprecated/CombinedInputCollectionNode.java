@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,9 +16,10 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
+package org.wso2.carbon.identity.user.self.registration.deprecated;
 
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
+import org.wso2.carbon.identity.user.self.registration.node.AbstractNode;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
@@ -31,6 +32,7 @@ import static org.wso2.carbon.identity.user.self.registration.util.Constants.STA
 /**
  * Node to combine input requirements of multiple nodes and prompt.
  */
+@Deprecated
 public class CombinedInputCollectionNode extends AbstractNode {
 
     private List<InputCollectionNode> referencedNodes = new ArrayList<>();; // For branching paths

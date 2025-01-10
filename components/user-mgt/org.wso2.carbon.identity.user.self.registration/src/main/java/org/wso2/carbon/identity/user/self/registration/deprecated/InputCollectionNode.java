@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,10 +16,10 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
+package org.wso2.carbon.identity.user.self.registration.deprecated;
 
-import java.util.Map;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
+import org.wso2.carbon.identity.user.self.registration.node.Node;
 import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 
 import java.util.List;
@@ -27,6 +27,7 @@ import java.util.List;
 /**
  * Interface for a node in the registration flow graph that collects input data.
  */
+@Deprecated
 public interface InputCollectionNode extends Node {
 
     /**

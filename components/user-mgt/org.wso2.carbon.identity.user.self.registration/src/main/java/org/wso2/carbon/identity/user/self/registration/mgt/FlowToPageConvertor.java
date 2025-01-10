@@ -27,18 +27,14 @@ public class FlowToPageConvertor {
             ObjectMapper objectMapper = new ObjectMapper();
             String jsonString = ConfigDataHolder.getInstance().getOrchestrationConfig().get("carbon.super");
             if (jsonString == null) {
-                throw new IllegalArgumentException("Flow not found: " + flowId + " for tenant: carbon.super make sure " +
-                        "the flow is added through the /reg-orchestration/config API");
+                throw new IllegalArgumentException(
+                        "Flow not found: " + flowId + " for tenant: carbon.super make sure " +
+                                "the flow is added through the /reg-orchestration/config API");
             }
             return objectMapper.readTree(jsonString);
+        } else {
+            throw new IllegalArgumentException("Flow not found: " + flowId);
         }
-        String fileName = flowId + ".json";
-        InputStream inputStream = FlowConvertor.class.getClassLoader().getResourceAsStream(fileName);
-        if (inputStream == null) {
-            throw new IllegalArgumentException("File not found: " + fileName);
-        }
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readTree(inputStream);
     }
 
     public static Map<String, PageDTO> convert(String flowId) throws IOException {

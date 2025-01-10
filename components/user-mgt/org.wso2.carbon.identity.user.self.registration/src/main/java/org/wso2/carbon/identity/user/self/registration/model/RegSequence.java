@@ -24,7 +24,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationServerException;
-import org.wso2.carbon.identity.user.self.registration.graphexecutor.node.Node;
+import org.wso2.carbon.identity.user.self.registration.node.Node;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.PageDTO;
 import org.wso2.carbon.identity.user.self.registration.util.Constants;
 

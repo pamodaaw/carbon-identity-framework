@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,13 +16,11 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.graphexecutor.node;
+package org.wso2.carbon.identity.user.self.registration.node;
 
 import java.util.Map;
-import org.wso2.carbon.identity.user.self.registration.model.RegSequence;
+import org.wso2.carbon.identity.user.self.registration.exception.RegistrationServerException;
 import org.wso2.carbon.identity.user.self.registration.util.Constants;
-import org.wso2.carbon.identity.user.self.registration.executor.Executor;
-import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 
@@ -34,26 +32,19 @@ import static org.wso2.carbon.identity.user.self.registration.util.Constants.STA
 /**
  * Implementation of a node specific to prompting user to select a choice out of multiple registration executor options.
  */
-public class UserChoiceDecisionNode extends AbstractNode implements InputCollectionNode {
+public class UserChoiceDecisionNode extends AbstractNode {
 
+    private static final String NODE_INPUT = "action-id";
     private List<Node> nextNodes = new ArrayList<>(); // For branching paths
-    private final InputMetaData inputMetaData;
 
     public UserChoiceDecisionNode() {
 
         super();
-        String id = getNodeId();
-        inputMetaData = new InputMetaData(id, "user-choice", "multiple-options", 1);
-        inputMetaData.setMandatory(true);
-        inputMetaData.setI18nKey("user.choice");
     }
 
     public UserChoiceDecisionNode(String id) {
 
         super(id);
-        inputMetaData = new InputMetaData(id, "user-choice", "multiple-options", 1);
-        inputMetaData.setMandatory(true);
-        inputMetaData.setI18nKey("user.choice");
     }
 
     /**
@@ -87,48 +78,25 @@ public class UserChoiceDecisionNode extends AbstractNode implements InputCollect
     }
 
     @Override
-    public NodeResponse execute(RegistrationContext context) {
+    public NodeResponse execute(RegistrationContext context) throws RegistrationServerException {
 
         Map<String, String> inputData = context.getUserInputData();
 
-        if (inputData != null && inputData.containsKey(inputMetaData.getName())) {
+        if (inputData != null && inputData.containsKey(NODE_INPUT)) {
+            String selectedNode = inputData.get(NODE_INPUT);
             for (Node nextNode : nextNodes) {
-                if (nextNode instanceof TaskExecutionNode) {
-                    Executor executor = ((TaskExecutionNode) nextNode).getExecutor();
-                    if (executor != null) {
-                        String executorName = executor.getName();
-                        if (inputData.get(inputMetaData.getName()).equals(executorName)) {
-                            setNextNodeId(nextNode.getNodeId());
-                            break;
-                        }
-                    }
+                if (nextNode.getNodeId().equals(selectedNode)) {
+                    setNextNodeId(selectedNode);
+                    break;
                 }
+            }
+            if (getNextNodeId() == null) {
+                throw new RegistrationServerException("Cannot find a valid node to proceed.");
             }
         }
         if (getNextNodeId() != null) {
             return new NodeResponse(Constants.STATUS_NODE_COMPLETE);
         }
-        NodeResponse response = new NodeResponse(STATUS_USER_INPUT_REQUIRED);
-        response.addInputMetaData(getRequiredData());
-        return response;
-    }
-
-    @Override
-    public List<InputMetaData> getRequiredData() {
-
-        if (getNextNodeId() != null) {
-            return null;
-        }
-        for (Node nextNode : nextNodes) {
-            if (nextNode instanceof TaskExecutionNode) {
-                inputMetaData.addOption(((TaskExecutionNode)nextNode).getExecutor().getName());
-            } else {
-                inputMetaData.addOption(nextNode.getNodeId());
-            }
-        }
-
-        List<InputMetaData> inputMetaList = new ArrayList<>();
-        inputMetaList.add(inputMetaData);
-        return inputMetaList;
+        return new NodeResponse(STATUS_USER_INPUT_REQUIRED);
     }
 }

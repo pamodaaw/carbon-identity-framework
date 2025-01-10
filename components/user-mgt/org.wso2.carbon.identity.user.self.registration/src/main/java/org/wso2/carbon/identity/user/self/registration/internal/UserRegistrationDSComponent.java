@@ -32,9 +32,12 @@ import org.osgi.service.http.HttpService;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.user.self.registration.UserRegistrationFlowService;
 import org.wso2.carbon.identity.user.self.registration.executor.Executor;
-import org.wso2.carbon.identity.user.self.registration.executor.impl.AttributeCollectorImpl;
+import org.wso2.carbon.identity.user.self.registration.deprecated.AttributeCollectorImpl;
+import org.wso2.carbon.identity.user.self.registration.executor.impl.UserOnboardingExecutor;
 import org.wso2.carbon.identity.user.self.registration.servlet.RegistrationOrchestrationServlet;
 import org.wso2.carbon.identity.user.self.registration.servlet.RegistrationPortalServlet;
+import org.wso2.carbon.identity.user.self.registration.temp.GoogleSignupTest;
+import org.wso2.carbon.identity.user.self.registration.temp.PasswordOnboarderTest;
 import org.wso2.carbon.registry.core.service.RegistryService;
 import org.wso2.carbon.user.core.service.RealmService;
 
@@ -61,10 +64,11 @@ public class UserRegistrationDSComponent {
         String registrationOrchestrationPath = "/reg-orchestration/config";
         String registrationPortalPath = "/reg-orchestration/portal";
 
-        AttributeCollectorImpl attributeCollectionExecutor = new AttributeCollectorImpl();
         bundleContext = context.getBundleContext();
         bundleContext.registerService(UserRegistrationFlowService.class.getName(), UserRegistrationFlowService.getInstance(), null);
-        bundleContext.registerService(Executor.class.getName(), attributeCollectionExecutor, null);
+        bundleContext.registerService(Executor.class.getName(), new UserOnboardingExecutor(), null);
+        bundleContext.registerService(Executor.class.getName(), new PasswordOnboarderTest(), null);
+        bundleContext.registerService(Executor.class.getName(), new GoogleSignupTest(), null);
 
         Servlet registrationOrchestrationServlet =
                 new ContextPathServletAdaptor(new RegistrationOrchestrationServlet(), registrationOrchestrationPath);

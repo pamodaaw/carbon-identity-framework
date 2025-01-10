@@ -31,11 +31,6 @@ public class PageDTO {
 
     }
 
-    public PageDTO(String id, String content, String flowId) {
-
-        this.id = id;
-    }
-
     public String getId() {
 
         return id;

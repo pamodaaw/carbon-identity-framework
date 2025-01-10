@@ -23,13 +23,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.JsonNode;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.NodeDTO;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.RegistrationDTO;
 import org.wso2.carbon.identity.user.self.registration.temp.ConfigDataHolder;
@@ -47,14 +44,9 @@ public class FlowConvertor {
                         "the flow is added through the /reg-orchestration/config API");
             }
             return objectMapper.readTree(jsonString);
+        } else {
+            throw new IllegalArgumentException("Flow not found: " + flowId);
         }
-        String fileName = flowId + ".json";
-        InputStream inputStream = FlowConvertor.class.getClassLoader().getResourceAsStream(fileName);
-        if (inputStream == null) {
-            throw new IllegalArgumentException("File not found: " + fileName);
-        }
-        ObjectMapper objectMapper = new ObjectMapper();
-        return objectMapper.readTree(inputStream);
     }
 
     public static RegistrationDTO adapt(String flowId) throws IOException {
@@ -210,7 +202,9 @@ public class FlowConvertor {
     private static NodeDTO createUserOnboardingNode() {
 
         String id = UUID.randomUUID().toString();
-        return new NodeDTO(id, "USER_ONBOARDING");
+        NodeDTO node = new NodeDTO(id, "EXECUTOR");
+        node.addProperty("EXECUTOR_NAME", "user-onboarding-executor");
+        return node;
     }
 
     private static NodeDTO createExecutorNode(String id, String nextNodeId, String exName, String instanceID) {
