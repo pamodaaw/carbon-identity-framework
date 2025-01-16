@@ -90,34 +90,6 @@ public class RegistrationFrameworkUtils {
         RegistrationContextCache.getInstance().clearCacheEntry(new RegistrationContextCacheKey(contextId));
     }
 
-    private static String getTenantDomain(HttpServletRequest request) throws RegistrationFrameworkException {
-
-        if (IdentityTenantUtil.isTenantQualifiedUrlsEnabled()) {
-            return IdentityTenantUtil.getTenantDomainFromContext();
-        }
-        String tenantDomain = request.getParameter(FrameworkConstants.RequestParams.TENANT_DOMAIN);
-
-        if (tenantDomain == null || tenantDomain.isEmpty() || "null".equals(tenantDomain)) {
-
-            String tenantId = request.getParameter(FrameworkConstants.RequestParams.TENANT_ID);
-
-            if (tenantId != null && !"-1234".equals(tenantId)) {
-                try {
-                    Tenant tenant = UserRegistrationServiceDataHolder.getRealmService().getTenantManager()
-                            .getTenant(Integer.parseInt(tenantId));
-                    if (tenant != null) {
-                        tenantDomain = tenant.getDomain();
-                    }
-                } catch (Exception e) {
-                    throw new RegistrationFrameworkException("Cannot retrieve tenant domain.");
-                }
-            } else {
-                tenantDomain = MultitenantConstants.SUPER_TENANT_DOMAIN_NAME;
-            }
-        }
-        return tenantDomain;
-    }
-
     public static ServiceProvider retrieveSpFromAppId(String appId, String tenantDomain) throws  RegistrationFrameworkException{
 
         ApplicationManagementService appInfo = ApplicationManagementService.getInstance();

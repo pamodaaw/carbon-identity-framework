@@ -22,11 +22,13 @@ import static org.wso2.carbon.identity.user.self.registration.util.Constants.Err
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.ErrorMessages.ERROR_EXECUTOR_UNHANDLED_DATA;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ACTION_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_CRED_REQUIRED;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NODE_COMPLETE;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_NEXT_ACTION_PENDING;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_VERIFICATION_REQUIRED;
 import java.util.Optional;
+import org.wso2.carbon.identity.user.self.registration.executor.RegistrationExecutor;
 import org.wso2.carbon.identity.user.self.registration.executor.action.Authentication;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.executor.action.AttributeCollection;
@@ -87,6 +89,22 @@ public class TaskExecutionNode extends AbstractNode {
     }
 
     private NodeResponse triggerExecutor(RegistrationContext context)
+            throws RegistrationFrameworkException {
+
+        if (executor instanceof RegistrationExecutor) {
+            ExecutorResponse response = ((RegistrationExecutor) executor).execute(context);
+            if (STATUS_COMPLETE.equals(response.getResult())) {
+                handleCompleteStatus(context, response);
+                return new NodeResponse(STATUS_NODE_COMPLETE);
+            } else {
+                return handleIncompleteStatus(context, response);
+            }
+        } else {
+            return triggerAction(context);
+        }
+    }
+
+    private NodeResponse triggerAction(RegistrationContext context)
             throws RegistrationFrameworkException {
 
         Optional<NodeResponse> attributeCollectionResponse = triggerAttributeCollection(context);

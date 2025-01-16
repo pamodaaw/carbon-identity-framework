@@ -31,7 +31,6 @@ import org.wso2.carbon.identity.user.self.registration.executor.RegistrationExec
 import org.wso2.carbon.identity.user.self.registration.internal.UserRegistrationServiceDataHolder;
 import org.wso2.carbon.identity.user.self.registration.model.ExecutorResponse;
 import org.wso2.carbon.identity.user.self.registration.model.InitData;
-import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationRequestedUser;
 import org.wso2.carbon.user.api.UserStoreException;
@@ -42,7 +41,7 @@ import org.wso2.carbon.user.mgt.common.DefaultPasswordGenerator;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.ErrorMessages.ERROR_LOADING_USERSTORE_MANAGER;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.ErrorMessages.ERROR_ONBOARDING_USER;
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.PASSWORD;
-import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_USER_CREATED;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_COMPLETE;
 
 public class UserOnboardingExecutor implements RegistrationExecutor {
 
@@ -86,7 +85,7 @@ public class UserOnboardingExecutor implements RegistrationExecutor {
             Optional<String> userAssertion = Optional.ofNullable(userid);
             context.setUserId(userid);
             userAssertion.ifPresent(context::setUserAssertion);
-            return new ExecutorResponse(STATUS_USER_CREATED);
+            return new ExecutorResponse(STATUS_COMPLETE);
         } catch (UserStoreException e) {
             throw new RegistrationServerException(ERROR_ONBOARDING_USER.getCode(),
                                                   ERROR_ONBOARDING_USER.getMessage(),
@@ -130,6 +129,6 @@ public class UserOnboardingExecutor implements RegistrationExecutor {
     @Override
     public List<InitData> getInitData() {
 
-        return List.of();
+        return null;
     }
 }

@@ -32,7 +32,6 @@ import org.osgi.service.http.HttpService;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.user.self.registration.UserRegistrationFlowService;
 import org.wso2.carbon.identity.user.self.registration.executor.Executor;
-import org.wso2.carbon.identity.user.self.registration.deprecated.AttributeCollectorImpl;
 import org.wso2.carbon.identity.user.self.registration.executor.impl.UserOnboardingExecutor;
 import org.wso2.carbon.identity.user.self.registration.servlet.RegistrationOrchestrationServlet;
 import org.wso2.carbon.identity.user.self.registration.servlet.RegistrationPortalServlet;
@@ -50,7 +49,6 @@ public class UserRegistrationDSComponent {
 
     private static final Log log = LogFactory.getLog(UserRegistrationDSComponent.class);
 
-    private static BundleContext bundleContext = null;
     private static RegistryService registryService = null;
     private HttpService httpService;
     private static RealmService realmService = null;
@@ -64,7 +62,7 @@ public class UserRegistrationDSComponent {
         String registrationOrchestrationPath = "/reg-orchestration/config";
         String registrationPortalPath = "/reg-orchestration/portal";
 
-        bundleContext = context.getBundleContext();
+        BundleContext bundleContext = context.getBundleContext();
         bundleContext.registerService(UserRegistrationFlowService.class.getName(), UserRegistrationFlowService.getInstance(), null);
         bundleContext.registerService(Executor.class.getName(), new UserOnboardingExecutor(), null);
         bundleContext.registerService(Executor.class.getName(), new PasswordOnboarderTest(), null);
@@ -78,7 +76,7 @@ public class UserRegistrationDSComponent {
             httpService.registerServlet(registrationOrchestrationPath, registrationOrchestrationServlet, null, null);
             httpService.registerServlet(registrationPortalPath, registrationPortalServlet, null, null);
         } catch (Throwable e) {
-            log.error("Error when registering RegistrationOrchastrationServlet via the OSGi HttpService.", e);
+            log.error("Error when registering RegistrationOrchestrationServlet via the OSGi HttpService.", e);
         }
     }
 

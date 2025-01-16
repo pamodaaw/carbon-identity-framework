@@ -45,6 +45,10 @@ public class UserRegistrationFlowService {
     private static final Log LOG = LogFactory.getLog(UserRegistrationFlowService.class);
     private static final UserRegistrationFlowService instance = new UserRegistrationFlowService();
 
+    private UserRegistrationFlowService() {
+
+    }
+
     // todo why osgi services?
     public static UserRegistrationFlowService getInstance() {
 
@@ -110,34 +114,34 @@ public class UserRegistrationFlowService {
         return state;
     }
 
-    private boolean validateInputs(Map<String, String> inputs, RegistrationContext context) {
-
-        if (context.getRequiredMetaData() == null) {
-            return true;
-        }
-        if (context.getRequiredMetaData() != null && (inputs == null || inputs.isEmpty())) {
-            return false;
-        }
-
-        for (InputMetaData metaData : context.getRequiredMetaData()) {
-
-            if (metaData.isMandatory() && inputs.get(metaData.getName()) == null) {
-                return false;
-            }
-
-            if (metaData.getValidationRegex() != null &&
-                    !inputs.get(metaData.getName()).matches(metaData.getValidationRegex())) {
-                return false;
-            }
-
-//            // Return false if the given option is not in the list of provided options.
-//            List<Object> providedOptions = metaData.getOptions();
-//            if (providedOptions != null && !providedOptions.isEmpty() &&
-//                    !providedOptions.contains(inputs.get(metaData.getName()))) {
+//    private boolean validateInputs(Map<String, String> inputs, RegistrationContext context) {
+//
+//        if (context.getRequiredMetaData() == null) {
+//            return true;
+//        }
+//        if (context.getRequiredMetaData() != null && (inputs == null || inputs.isEmpty())) {
+//            return false;
+//        }
+//
+//        for (InputMetaData metaData : context.getRequiredMetaData()) {
+//
+//            if (metaData.isMandatory() && inputs.get(metaData.getName()) == null) {
 //                return false;
 //            }
-        }
-
-        return true;
-    }
+//
+//            if (metaData.getValidationRegex() != null &&
+//                    !inputs.get(metaData.getName()).matches(metaData.getValidationRegex())) {
+//                return false;
+//            }
+//
+////            // Return false if the given option is not in the list of provided options.
+////            List<Object> providedOptions = metaData.getOptions();
+////            if (providedOptions != null && !providedOptions.isEmpty() &&
+////                    !providedOptions.contains(inputs.get(metaData.getName()))) {
+////                return false;
+////            }
+//        }
+//
+//        return true;
+//    }
 }
