@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,17 +16,24 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.executor;
+package org.wso2.carbon.identity.user.self.registration.mgt.dto;
 
-import java.util.List;
-import org.wso2.carbon.identity.user.self.registration.model.InitData;
+public class MetaDTO {
 
-/**
- * A wrapper interface for all the action types of registration.
- */
-public interface Executor {
+    private String idp;
 
-    String getName();
+    public MetaDTO(String idp) {
 
-    List<InitData> getInitData();
+        this.idp = idp;
+    }
+
+    public String getIdp() {
+
+        return idp;
+    }
+
+    public void setIdp(String idp) {
+
+        this.idp = idp;
+    }
 }

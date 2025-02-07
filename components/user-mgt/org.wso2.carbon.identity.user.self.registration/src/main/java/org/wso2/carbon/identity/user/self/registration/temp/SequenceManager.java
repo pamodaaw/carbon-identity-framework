@@ -20,17 +20,15 @@ package org.wso2.carbon.identity.user.self.registration.temp;
 
 import java.io.IOException;
 import java.util.Map;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationServerException;
 import org.wso2.carbon.identity.user.self.registration.executor.Executor;
-import org.wso2.carbon.identity.user.self.registration.node.InputCollectNode;
+import org.wso2.carbon.identity.user.self.registration.node.ViewPromptingNode;
 import org.wso2.carbon.identity.user.self.registration.node.TaskExecutionNode;
 import org.wso2.carbon.identity.user.self.registration.node.UserChoiceDecisionNode;
-import org.wso2.carbon.identity.user.self.registration.mgt.FlowConvertor;
-import org.wso2.carbon.identity.user.self.registration.mgt.FlowToPageConvertor;
-import org.wso2.carbon.identity.user.self.registration.mgt.dto.NodeDTO;
-import org.wso2.carbon.identity.user.self.registration.mgt.dto.RegistrationDTO;
+import org.wso2.carbon.identity.user.self.registration.temp.mgt.FlowConvertor;
+import org.wso2.carbon.identity.user.self.registration.temp.mgt.FlowToPageConvertor;
+import org.wso2.carbon.identity.user.self.registration.model.dto.NodeDTO;
+import org.wso2.carbon.identity.user.self.registration.model.dto.RegistrationDTO;
 import org.wso2.carbon.identity.user.self.registration.model.RegSequence;
 import org.wso2.carbon.identity.user.self.registration.node.Node;
 import org.wso2.carbon.identity.user.self.registration.internal.UserRegistrationServiceDataHolder;
@@ -43,24 +41,12 @@ import java.util.List;
  */
 public class SequenceManager {
 
-    private static final Log LOG = LogFactory.getLog(SequenceManager.class);
-
-    public RegSequence loadSequence(String appId) throws RegistrationServerException {
-
-        try {
-            return loadSequenceFromConfig(appId);
-        } catch (RegistrationServerException e) {
-            throw new RegistrationServerException(
-                    "Error while loading the sequence from the database for the id: " + appId, e);
-        }
-    }
-
-    private RegSequence loadSequenceFromConfig(String flowId) throws RegistrationServerException {
+    public RegSequence loadSequence(String orgId) throws RegistrationServerException {
 
         RegistrationDTO regDto;
         try {
-            regDto = FlowConvertor.adapt(flowId);
-            regDto.setPageDTOs(FlowToPageConvertor.convert(flowId));
+            regDto = FlowConvertor.getSequence(orgId);
+            regDto.setPageDTOs(FlowToPageConvertor.getPageList(orgId));
         } catch (IOException e) {
             throw new RegistrationServerException("Error while converting the registration flow.", e);
         }
@@ -104,7 +90,7 @@ public class SequenceManager {
                     throw new RegistrationServerException("Multiple next nodes are defined for the executor node: " +
                                                                   nodeDTO.getId());
                 }
-                node = new InputCollectNode(nodeDTO.getId());
+                node = new ViewPromptingNode(nodeDTO.getId());
             } else {
                 throw new RegistrationServerException("Unsupported node type: " + nodeDTO.getType());
             }

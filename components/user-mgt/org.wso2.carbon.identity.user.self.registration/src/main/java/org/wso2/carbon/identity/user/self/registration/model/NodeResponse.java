@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.wso2.carbon.identity.user.self.registration.mgt.dto.PageDTO;
+import org.wso2.carbon.identity.user.self.registration.model.dto.PageDTO;
 
 /**
  * Model class to represent the response of a node in the registration sequence.

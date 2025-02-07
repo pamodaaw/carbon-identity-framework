@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -16,17 +16,33 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.self.registration.executor;
+package org.wso2.carbon.identity.user.self.registration.mgt.dto;
 
+import java.util.ArrayList;
 import java.util.List;
-import org.wso2.carbon.identity.user.self.registration.model.InitData;
 
-/**
- * A wrapper interface for all the action types of registration.
- */
-public interface Executor {
+public class BlockDTO {
 
-    String getName();
+    private String id;
+    private final List<String> elements = new ArrayList<>();
 
-    List<InitData> getInitData();
+    public String getId() {
+
+        return id;
+    }
+
+    public void setId(String id) {
+
+        this.id = id;
+    }
+
+    public List<String> getElementIds() {
+
+        return elements;
+    }
+
+    public void addElementId(String elementId) {
+
+        this.elements.add(elementId);
+    }
 }

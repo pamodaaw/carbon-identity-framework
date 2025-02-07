@@ -34,6 +34,11 @@ public class UserRegistrationServiceDataHolder {
     private static ApplicationManagementService applicationManagementService;
     private static RealmService realmService;
 
+    /**
+     * Get the list of registered executors.
+     *
+     * @return List of executors.
+     */
     public static List<Executor> getExecutors() {
 
         // TODO: 9/27/17 do the null check
@@ -41,9 +46,9 @@ public class UserRegistrationServiceDataHolder {
     }
 
     /**
-     * Add executors to the list.
+     * Get the registered ApplicationManagementService.
      *
-     * @return  List of executors.
+     * @return  Application management service.
      */
     public static ApplicationManagementService getApplicationManagementService() {
 

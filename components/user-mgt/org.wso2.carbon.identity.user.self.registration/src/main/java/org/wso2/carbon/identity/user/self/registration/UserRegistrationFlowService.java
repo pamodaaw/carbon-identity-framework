@@ -22,20 +22,18 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationServerException;
-import org.wso2.carbon.identity.user.self.registration.model.InputMetaData;
 import org.wso2.carbon.identity.user.self.registration.model.ExecutionState;
 import org.wso2.carbon.identity.user.self.registration.model.InputData;
 import org.wso2.carbon.identity.user.self.registration.model.NodeResponse;
 import org.wso2.carbon.identity.user.self.registration.model.RegSequence;
 import org.wso2.carbon.identity.user.self.registration.model.RegistrationContext;
 import org.wso2.carbon.identity.user.self.registration.temp.SequenceManager;
+import org.wso2.carbon.identity.user.self.registration.util.Constants;
 import org.wso2.carbon.identity.user.self.registration.util.RegistrationFrameworkUtils;
 
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
-import static org.wso2.carbon.identity.user.self.registration.util.Constants.ErrorMessages.ERROR_SEQUENCE_NOT_DEFINED_FOR_APP;
+import static org.wso2.carbon.identity.user.self.registration.util.Constants.ErrorMessages.ERROR_SEQUENCE_NOT_DEFINED_FOR_ORG;
 
 /**
  * Service class to handle the user registration flow.
@@ -58,32 +56,32 @@ public class UserRegistrationFlowService {
     /**
      * Initiates the registration flow for the given application.
      *
-     * @param appId Application ID.
+     * @param tenantDomain Tenant Domain.
      * @return ExecutionState.
      * @throws RegistrationFrameworkException if something goes wrong while initiating the registration flow.
      */
-    public ExecutionState initiateFlow(String appId) throws RegistrationFrameworkException {
+    public ExecutionState initiateFlow(String tenantDomain) throws RegistrationFrameworkException {
 
         String flowId = UUID.randomUUID().toString();
         RegistrationContext context = new RegistrationContext();
-        RegSequence sequence = new SequenceManager().loadSequence(appId);
-        // todo resolve the tenant.
-        context.setTenantDomain("carbon.super");
+        // todo resolve the org id from the tenant.
+        String orgId = Constants.NEW_FLOW;
+        RegSequence sequence = new SequenceManager().loadSequence(orgId);
+        context.setTenantDomain(tenantDomain);
         context.setRegSequence(sequence);
         context.setContextIdentifier(flowId);
 
         if (sequence.getFirstNode() == null) {
-            throw new RegistrationServerException(ERROR_SEQUENCE_NOT_DEFINED_FOR_APP.getCode(),
-                                                  ERROR_SEQUENCE_NOT_DEFINED_FOR_APP.getMessage(),
-                                                  String.format(ERROR_SEQUENCE_NOT_DEFINED_FOR_APP.getDescription(),
-                                                                appId));
+            throw new RegistrationServerException(ERROR_SEQUENCE_NOT_DEFINED_FOR_ORG.getCode(),
+                                                  ERROR_SEQUENCE_NOT_DEFINED_FOR_ORG.getMessage(),
+                                                  String.format(ERROR_SEQUENCE_NOT_DEFINED_FOR_ORG.getDescription(),
+                                                                tenantDomain));
         }
 
         NodeResponse response = sequence.execute(context);
         // todo implement the context and profile storing layer.
         RegistrationFrameworkUtils.addRegContextToCache(context);
 
-        // todo include the details for UI rendering.
         return new ExecutionState(flowId, response);
     }
 

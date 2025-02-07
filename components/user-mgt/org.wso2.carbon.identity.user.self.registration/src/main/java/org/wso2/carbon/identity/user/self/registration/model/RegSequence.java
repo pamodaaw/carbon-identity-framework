@@ -25,7 +25,7 @@ import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.self.registration.exception.RegistrationServerException;
 import org.wso2.carbon.identity.user.self.registration.node.Node;
-import org.wso2.carbon.identity.user.self.registration.mgt.dto.PageDTO;
+import org.wso2.carbon.identity.user.self.registration.model.dto.PageDTO;
 import org.wso2.carbon.identity.user.self.registration.util.Constants;
 
 import static org.wso2.carbon.identity.user.self.registration.util.Constants.STATUS_ATTR_REQUIRED;
@@ -67,6 +67,8 @@ public class RegSequence {
     public RegSequence(String firstNodeId) {
 
         this.firstNodeId = firstNodeId;
+        pageIdList = new HashMap<>();
+        nodeList = new HashMap<>();
     }
 
     public Node getFirstNode() {

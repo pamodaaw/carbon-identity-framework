@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
+ * Copyright (c) 2025, WSO2 LLC. (https://www.wso2.com) All Rights Reserved.
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -15,6 +15,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.wso2.carbon.identity.user.self.registration.internal;
 
 import org.apache.commons.logging.Log;
@@ -33,11 +34,10 @@ import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.user.self.registration.UserRegistrationFlowService;
 import org.wso2.carbon.identity.user.self.registration.executor.Executor;
 import org.wso2.carbon.identity.user.self.registration.executor.impl.UserOnboardingExecutor;
-import org.wso2.carbon.identity.user.self.registration.servlet.RegistrationOrchestrationServlet;
-import org.wso2.carbon.identity.user.self.registration.servlet.RegistrationPortalServlet;
+import org.wso2.carbon.identity.user.self.registration.temp.servlet.RegistrationOrchestrationServlet;
+import org.wso2.carbon.identity.user.self.registration.temp.servlet.RegistrationPortalServlet;
 import org.wso2.carbon.identity.user.self.registration.temp.GoogleSignupTest;
 import org.wso2.carbon.identity.user.self.registration.temp.PasswordOnboarderTest;
-import org.wso2.carbon.registry.core.service.RegistryService;
 import org.wso2.carbon.user.core.service.RealmService;
 
 import javax.servlet.Servlet;
@@ -47,14 +47,10 @@ import javax.servlet.Servlet;
          immediate = true)
 public class UserRegistrationDSComponent {
 
-    private static final Log log = LogFactory.getLog(UserRegistrationDSComponent.class);
+    private static final Log LOG = LogFactory.getLog(UserRegistrationDSComponent.class);
 
-    private static RegistryService registryService = null;
     private HttpService httpService;
     private static RealmService realmService = null;
-    public static RegistryService getRegistryService() {
-        return registryService;
-    }
 
     @Activate
     protected void activate(ComponentContext context) {
@@ -76,36 +72,18 @@ public class UserRegistrationDSComponent {
             httpService.registerServlet(registrationOrchestrationPath, registrationOrchestrationServlet, null, null);
             httpService.registerServlet(registrationPortalPath, registrationPortalServlet, null, null);
         } catch (Throwable e) {
-            log.error("Error when registering RegistrationOrchestrationServlet via the OSGi HttpService.", e);
+            LOG.error("Error when registering RegistrationOrchestrationServlet via the OSGi HttpService.", e);
         }
     }
 
     @Deactivate
     protected void deactivate(ComponentContext context) {
-        log.debug("UserRegistration bundle is deactivated ");
-    }
 
-    protected void unsetRegistryService(RegistryService registryService) {
-        if (log.isDebugEnabled()) {
-            log.info("Unsetting the Registry Service");
-        }
-        UserRegistrationDSComponent.registryService = null;
-    }
-
-    @Reference(
-             name = "registry.service",
-             service = org.wso2.carbon.registry.core.service.RegistryService.class,
-             cardinality = ReferenceCardinality.MANDATORY,
-             policy = ReferencePolicy.DYNAMIC,
-             unbind = "unsetRegistryService")
-    protected void setRegistryService(RegistryService registryService) {
-        if (log.isDebugEnabled()) {
-            log.info("Setting the Registry Service");
-        }
-        UserRegistrationDSComponent.registryService = registryService;
+        LOG.debug("UserRegistration bundle is deactivated ");
     }
 
     public static RealmService getRealmService() {
+
         return realmService;
     }
 
@@ -116,17 +94,15 @@ public class UserRegistrationDSComponent {
              policy = ReferencePolicy.DYNAMIC,
              unbind = "unsetRealmService")
     protected void setRealmService(RealmService realmService) {
-        if (log.isDebugEnabled()) {
-            log.info("Setting the Realm Service");
-        }
+
+        LOG.debug("Setting the Realm Service in the UserRegistration component.");
         UserRegistrationDSComponent.realmService = realmService;
         UserRegistrationServiceDataHolder.setRealmService(realmService);
     }
 
     protected void unsetRealmService(RealmService realmService) {
-        if (log.isDebugEnabled()) {
-            log.info("Unsetting the Realm Service");
-        }
+
+        LOG.debug("Unsetting the Realm Service in the UserRegistration component.");
         UserRegistrationDSComponent.realmService = null;
         UserRegistrationServiceDataHolder.setRealmService(null);
     }
@@ -172,18 +148,13 @@ public class UserRegistrationDSComponent {
     )
     protected void setHttpService(HttpService httpService) {
 
-        if (log.isDebugEnabled()) {
-            log.debug("HTTP Service is set in Trusted App mgt bundle");
-        }
+        LOG.debug("HTTP Service is set in UserRegistration bundle");
         this.httpService = httpService;
     }
 
     protected void unsetHttpService(HttpService httpService) {
 
-        if (log.isDebugEnabled()) {
-            log.debug("HTTP Service is unset in the Trusted App mgt bundle");
-        }
+        LOG.debug("HTTP Service is unset in the UserRegistration bundle");
         this.httpService = null;
     }
 }
-

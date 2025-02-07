@@ -45,7 +45,7 @@ public class RegistrationContext implements Serializable {
 
     // todo separate general and registration specific properties.
     private final List<String> authenticatedMethods = new ArrayList<>();
-    private Map<String, Object> properties = new HashMap<>();
+    private final Map<String, Object> properties = new HashMap<>();
 
     public Node getCurrentNode() {
 
