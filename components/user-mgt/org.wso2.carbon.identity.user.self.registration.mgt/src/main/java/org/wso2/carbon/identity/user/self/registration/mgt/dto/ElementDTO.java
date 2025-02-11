@@ -20,8 +20,10 @@ package org.wso2.carbon.identity.user.self.registration.mgt.dto;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.wso2.carbon.identity.user.self.registration.mgt.dto.ActionDTO;
 
+/**
+ * DTO class for Element.
+ */
 public class ElementDTO {
 
     private String id;

@@ -18,6 +18,9 @@
 
 package org.wso2.carbon.identity.user.self.registration.mgt;
 
+/**
+ * Constants for the self registration flow.
+ */
 public class Constants {
 
     public static final String NEW_FLOW = "newflow"; // temp constant to engage new flow.
@@ -30,7 +33,9 @@ public class Constants {
     public static final String EXECUTOR_TYPE = "EXECUTOR_TYPE";
     public static final String EXECUTOR_ID = "EXECUTOR_ID";
 
-    // Define a inner class for the flow definition.
+    /**
+     * Constants for the flow elements.
+     */
     public static class FlowElements {
 
         public static final String NODES = "nodes";
@@ -45,11 +50,13 @@ public class Constants {
         public static final String IDP = "idp";
     }
 
+    /**
+     * Constants for the node types.
+     */
     public static class NodeTypes {
 
         public static final String PROMPT = "PROMPT";
         public static final String DECISION = "DECISION";
         public static final String TASK_EXECUTION = "TASK_EXECUTION";
     }
-
 }

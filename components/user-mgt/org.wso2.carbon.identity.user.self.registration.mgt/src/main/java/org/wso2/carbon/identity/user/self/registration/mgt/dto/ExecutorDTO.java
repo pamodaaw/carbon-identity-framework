@@ -18,8 +18,9 @@
 
 package org.wso2.carbon.identity.user.self.registration.mgt.dto;
 
-import org.wso2.carbon.identity.user.self.registration.mgt.dto.MetaDTO;
-
+/**
+ * DTO class for Executor.
+ */
 public class ExecutorDTO {
 
     private String name;

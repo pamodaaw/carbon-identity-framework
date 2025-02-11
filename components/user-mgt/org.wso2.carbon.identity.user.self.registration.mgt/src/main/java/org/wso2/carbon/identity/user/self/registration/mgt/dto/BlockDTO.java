@@ -21,10 +21,13 @@ package org.wso2.carbon.identity.user.self.registration.mgt.dto;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * DTO class for Block.
+ */
 public class BlockDTO {
 
-    private String id;
     private final List<String> elements = new ArrayList<>();
+    private String id;
 
     public String getId() {
 

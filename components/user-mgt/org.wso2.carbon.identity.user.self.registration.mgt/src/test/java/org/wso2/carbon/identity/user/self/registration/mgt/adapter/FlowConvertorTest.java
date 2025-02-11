@@ -18,12 +18,14 @@
 
 package org.wso2.carbon.identity.user.self.registration.mgt.adapter;
 
+import org.testng.annotations.Test;
+import org.wso2.carbon.identity.user.self.registration.mgt.dto.RegistrationDTO;
+
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import org.testng.annotations.Test;
-import org.wso2.carbon.identity.user.self.registration.mgt.dto.RegistrationDTO;
+
 import static org.testng.AssertJUnit.assertEquals;
 import static org.testng.AssertJUnit.assertNotNull;
 
@@ -38,7 +40,8 @@ public class FlowConvertorTest {
         } catch (IllegalArgumentException e) {
             assertEquals(e.getMessage(), "Invalid JSON: 'nodes' is missing or not an array.");
             throw e;
-        }    }
+        }
+    }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     void testSequenceWithNoNodesArray() throws IOException {
@@ -49,7 +52,8 @@ public class FlowConvertorTest {
         } catch (IllegalArgumentException e) {
             assertEquals(e.getMessage(), "Invalid JSON: 'nodes' is missing or not an array.");
             throw e;
-        }    }
+        }
+    }
 
     @Test
     void testGetSequence() throws IOException {
@@ -60,10 +64,10 @@ public class FlowConvertorTest {
         // Act
         RegistrationDTO registrationDTO = FlowConvertor.getSequence(jsonFlow);
         assertNotNull(registrationDTO);
-
     }
 
     private String readJsonFromFile(String filePath) throws IOException {
+
         return new String(Files.readAllBytes(Paths.get(filePath)), StandardCharsets.UTF_8);
     }
 }

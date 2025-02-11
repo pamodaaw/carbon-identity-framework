@@ -22,13 +22,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.self.registration.mgt.Constants;
@@ -41,15 +34,24 @@ import org.wso2.carbon.identity.user.self.registration.mgt.dto.NodeDTO;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.PageDTO;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.RegistrationDTO;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
 public class FlowConvertor {
 
     // Define a constant to LOG the information.
     private static final Log LOG = LogFactory.getLog(FlowConvertor.class);
 
-    public static RegistrationDTO getSequence(String flowJson ) throws IOException {
+    public static RegistrationDTO getSequence(String flowJson) throws IOException {
 
         JsonNode registrationSequenceJson = new ObjectMapper().readTree(flowJson);
         RegistrationDTO sequence = new RegistrationDTO();
+        sequence.setFlowJson(flowJson);
         Map<String, ElementDTO> elementDTOMap = processElements(registrationSequenceJson);
         Map<String, BlockDTO> blockDTOMap = processBlocks(registrationSequenceJson);
 
@@ -86,7 +88,8 @@ public class FlowConvertor {
                     continue;
                 }
                 String actionType = action.get(Constants.FlowElements.TYPE).asText();
-                processActionType(sequence, nextActionNodeDTOS, actionId, nextNodeId, actionType, action, elementDTOMap);
+                processActionType(sequence, nextActionNodeDTOS, actionId, nextNodeId, actionType, action,
+                                  elementDTOMap);
             }
 
             updateSequenceWithNextActionNodes(sequence, nextActionNodeDTOS, jnodeId);
@@ -139,6 +142,7 @@ public class FlowConvertor {
         }
         Map<String, ElementDTO> elementDTOMap = new HashMap<>();
         for (JsonNode element : elementsArray) {
+
             String elementId = element.get("id").asText();
             String category = element.get("category").asText();
             String type = element.get("type").asText();
@@ -208,6 +212,7 @@ public class FlowConvertor {
     }
 
     private static String getNextNodeId(JsonNode actionButton) {
+
         String nextNodeId = "";
         ArrayNode nextNode = (ArrayNode) actionButton.get(Constants.FlowElements.NEXT);
         if (nextNode != null) {
@@ -227,7 +232,10 @@ public class FlowConvertor {
         return nextNodeId;
     }
 
-    private static void processActionType(RegistrationDTO sequence, List<NodeDTO> nextActionNodeDTOS, String actionId, String nextNodeId, String actionType, JsonNode action, Map<String, ElementDTO> elementDTOMap) {
+    private static void processActionType(RegistrationDTO sequence, List<NodeDTO> nextActionNodeDTOS, String actionId,
+                                          String nextNodeId, String actionType, JsonNode action,
+                                          Map<String, ElementDTO> elementDTOMap) {
+
         if (Constants.EXECUTOR.equals(actionType)) {
             processExecutorAction(sequence, nextActionNodeDTOS, actionId, nextNodeId, action, elementDTOMap);
         } else if (Constants.RULE.equals(actionType)) {
@@ -237,7 +245,10 @@ public class FlowConvertor {
         }
     }
 
-    private static void processExecutorAction(RegistrationDTO sequence, List<NodeDTO> nextActionNodeDTOS, String actionId, String nextNodeId, JsonNode action, Map<String, ElementDTO> elementDTOMap) {
+    private static void processExecutorAction(RegistrationDTO sequence, List<NodeDTO> nextActionNodeDTOS,
+                                              String actionId, String nextNodeId, JsonNode action,
+                                              Map<String, ElementDTO> elementDTOMap) {
+
         ArrayNode executorsArray = (ArrayNode) action.get(Constants.FlowElements.EXECUTORS);
         boolean firstExecutorInArray = true;
         NodeDTO prevNode = null;
@@ -264,13 +275,17 @@ public class FlowConvertor {
         updateElementWithAction(actionId, Constants.EXECUTOR, elementDTOMap, executorsArray);
     }
 
-    private static void processNextAction(RegistrationDTO sequence, List<NodeDTO> nextActionNodeDTOS, String actionId, String nextNodeId, JsonNode action, Map<String, ElementDTO> elementDTOMap) {
+    private static void processNextAction(RegistrationDTO sequence, List<NodeDTO> nextActionNodeDTOS, String actionId,
+                                          String nextNodeId, JsonNode action, Map<String, ElementDTO> elementDTOMap) {
+
         NodeDTO nodeDTO = createInputCollectorNode(actionId, nextNodeId);
         nextActionNodeDTOS.add(nodeDTO);
         updateElementWithAction(actionId, Constants.NEXT, elementDTOMap, null);
     }
 
-    private static void updateElementWithAction(String actionId, String actionType, Map<String, ElementDTO> elementDTOMap, ArrayNode executorsArray) {
+    private static void updateElementWithAction(String actionId, String actionType,
+                                                Map<String, ElementDTO> elementDTOMap, ArrayNode executorsArray) {
+
         ActionDTO actionDTO = new ActionDTO(actionType);
         if (Constants.EXECUTOR.equals(actionType) && executorsArray != null) {
             JsonNode firstExecutor = executorsArray.get(0);
@@ -290,7 +305,9 @@ public class FlowConvertor {
         }
     }
 
-    private static void processElementsInNode(JsonNode node, PageDTO pageDTO, Map<String, ElementDTO> elementDTOMap, Map<String, BlockDTO> blockDTOMap) {
+    private static void processElementsInNode(JsonNode node, PageDTO pageDTO, Map<String, ElementDTO> elementDTOMap,
+                                              Map<String, BlockDTO> blockDTOMap) {
+
         JsonNode elements = node.get("elements");
         if (elements != null && elements.isArray()) {
             for (JsonNode element : elements) {
@@ -315,7 +332,8 @@ public class FlowConvertor {
     }
 
     private static void updateSequenceWithNextActionNodes(RegistrationDTO sequence, List<NodeDTO> nextActionNodeDTOS,
-                                                       String jnodeId) {
+                                                          String jnodeId) {
+
         if (nextActionNodeDTOS.size() > 1) {
             NodeDTO decisionNodeDTO = createDecisionNode();
             if (sequence.getFirstNode() == null) {

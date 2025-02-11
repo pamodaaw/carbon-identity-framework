@@ -18,12 +18,16 @@
 
 package org.wso2.carbon.identity.user.self.registration.mgt;
 
-import java.io.IOException;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.self.registration.mgt.adapter.FlowConvertor;
 import org.wso2.carbon.identity.user.self.registration.mgt.dto.RegistrationDTO;
 
+import java.io.IOException;
+
+/**
+ * This class is responsible for managing the registration flow.
+ */
 public class RegistrationFlowMgtService {
 
     private static final Log LOG = LogFactory.getLog(RegistrationFlowMgtService.class);
@@ -38,16 +42,32 @@ public class RegistrationFlowMgtService {
         return instance;
     }
 
-    public void addRegistrationFlow(String flow, String tenantID) {
+    /**
+     * Store the registration flow.
+     *
+     * @param flow     The registration flow.
+     * @param tenantID The tenant ID.
+     */
+    public void storeRegistrationFlow(String flow, String tenantID) {
 
         // Call the FlowConvertor to convert the flow to a DTO.
         try {
             RegistrationDTO flowDTO = FlowConvertor.getSequence(flow);
+            RegistrationFlowDAO.getInstance().addRegistrationObject(flowDTO, tenantID);
         } catch (IOException e) {
             LOG.error("Error while converting the flow to a DTO.", e);
             throw new RuntimeException(e);
         }
-
     }
 
+    /**
+     * Retrieve the registration flow by tenant ID.
+     *
+     * @param tenantID The tenant ID.
+     */
+    public RegistrationDTO retrieveRegistrationFlowByTenantId(String tenantID) {
+
+        // Call the DAO to retrieve the flow.
+        return RegistrationFlowDAO.getInstance().getRegistrationObjectByTenantId(tenantID);
+    }
 }

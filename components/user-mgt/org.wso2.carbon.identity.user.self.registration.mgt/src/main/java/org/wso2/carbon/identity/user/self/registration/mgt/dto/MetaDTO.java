@@ -18,6 +18,9 @@
 
 package org.wso2.carbon.identity.user.self.registration.mgt.dto;
 
+/**
+ * DTO class for Meta.
+ */
 public class MetaDTO {
 
     private String idp;

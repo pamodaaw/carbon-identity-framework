@@ -20,14 +20,17 @@ package org.wso2.carbon.identity.user.self.registration.mgt.dto;
 
 import java.util.ArrayList;
 import java.util.List;
-import org.wso2.carbon.identity.user.self.registration.mgt.dto.BlockDTO;
-import org.wso2.carbon.identity.user.self.registration.mgt.dto.ElementDTO;
 
+/**
+ * DTO class for Page.
+ */
 public class PageDTO {
 
-    private String id;
     List<ElementDTO> elements = new ArrayList<>();
+    List<String> jsonElements = new ArrayList<>();
     List<BlockDTO> blocks = new ArrayList<>();
+    List<String> jsonBlocks = new ArrayList<>();
+    private String id;
 
     public PageDTO() {
 
@@ -66,5 +69,25 @@ public class PageDTO {
     public List<BlockDTO> getBlocks() {
 
         return blocks;
+    }
+
+    public List<String> getJsonElements() {
+
+        return jsonElements;
+    }
+
+    public void addJsonElement(String jsonElement) {
+
+        this.jsonElements.add(jsonElement);
+    }
+
+    public List<String> getJsonBlocks() {
+
+        return jsonBlocks;
+    }
+
+    public void addJsonBlock(String jsonBlock) {
+
+        this.jsonBlocks.add(jsonBlock);
     }
 }

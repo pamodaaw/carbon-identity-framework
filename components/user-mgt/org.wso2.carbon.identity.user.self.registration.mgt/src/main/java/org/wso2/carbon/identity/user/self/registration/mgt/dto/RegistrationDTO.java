@@ -20,18 +20,23 @@ package org.wso2.carbon.identity.user.self.registration.mgt.dto;
 
 import java.util.HashMap;
 import java.util.Map;
-import org.wso2.carbon.identity.user.self.registration.mgt.dto.NodeDTO;
+import java.util.UUID;
 
+/**
+ * DTO class for Registration flow.
+ */
 public class RegistrationDTO {
 
     private String flowID;
     private String tenantID;
     private String firstNode;
+    private String flowJson;
     private Map<String, NodeDTO> nodeDTOList;
     private Map<String, PageDTO> pageDTOs;
 
     public RegistrationDTO() {
 
+        this.flowID = UUID.randomUUID().toString();
         this.nodeDTOList = new HashMap<>();
         this.pageDTOs = new HashMap<>();
     }
@@ -81,11 +86,15 @@ public class RegistrationDTO {
         return nodeDTOList;
     }
 
+    public void setNodeDTOList(Map<String, NodeDTO> nodeDTOList) {
+
+        this.nodeDTOList = nodeDTOList;
+    }
+
     public void addNode(NodeDTO node) {
+
         if (node != null && node.getId() != null) {
             this.nodeDTOList.put(node.getId(), node);
-        } else {
-            System.err.println("Warning: Attempted to add a null or invalid node.");
         }
     }
 
@@ -97,12 +106,7 @@ public class RegistrationDTO {
     // Retrieve all nodes as a map
     public Map<String, NodeDTO> getNodes() {
 
-        return  this.nodeDTOList;
-    }
-
-    public void setNodeDTOList(Map<String, NodeDTO> nodeDTOList) {
-
-        this.nodeDTOList = nodeDTOList;
+        return this.nodeDTOList;
     }
 
     public Map<String, PageDTO> getPageDTOs() {
@@ -110,7 +114,7 @@ public class RegistrationDTO {
         return pageDTOs;
     }
 
-    public void setPageDTOs( Map<String, PageDTO> pageDTOs) {
+    public void setPageDTOs(Map<String, PageDTO> pageDTOs) {
 
         this.pageDTOs = pageDTOs;
     }
@@ -118,5 +122,15 @@ public class RegistrationDTO {
     public void addPageDTO(PageDTO pageDTO) {
 
         this.pageDTOs.put(pageDTO.getId(), pageDTO);
+    }
+
+    public String getFlowJson() {
+
+        return flowJson;
+    }
+
+    public void setFlowJson(String flowJson) {
+
+        this.flowJson = flowJson;
     }
 }

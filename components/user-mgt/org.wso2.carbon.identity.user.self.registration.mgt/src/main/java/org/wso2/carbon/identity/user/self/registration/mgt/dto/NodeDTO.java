@@ -23,12 +23,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * DTO class for Node.
+ */
 public class NodeDTO {
 
     private String id;
     private String type;
     private String flowId;
     private List<String> nextNodes;
+    private boolean isFirstNode;
     private Map<String, String> pageIds = new HashMap<>();
     private Map<String, String> properties;
 
@@ -89,6 +93,11 @@ public class NodeDTO {
         this.properties.put(key, value);
     }
 
+    public void setProperties(Map<String, String> properties) {
+
+        this.properties = properties;
+    }
+
     public Map<String, String> getProperties() {
 
         return properties;
@@ -122,5 +131,15 @@ public class NodeDTO {
     public void addPageIds(String key, String value) {
 
         this.pageIds.put(key, value);
+    }
+
+    public boolean isFirstNode() {
+
+        return isFirstNode;
+    }
+
+    public void setFirstNode(boolean firstNode) {
+
+        isFirstNode = firstNode;
     }
 }
