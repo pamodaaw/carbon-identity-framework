@@ -126,11 +126,6 @@ public class IdentityApplicationConstants {
 
     public static final String IS_API_BASED_AUTHENTICATION_ENABLED_PROPERTY_NAME = "isAPIBasedAuthenticationEnabled";
     public static final String IS_API_BASED_AUTHENTICATION_ENABLED_DISPLAY_NAME = "Is API Based Authentication Enabled";
-
-    public static final String IS_AUTH_SEQUENCE_BASED_SIGNUP_ENABLED_PROPERTY_NAME = "isAuthSequenceBasedSignupEnabled";
-    public static final String IS_AUTH_SEQUENCE_BASED_SIGNUP_ENABLED_DISPLAY_NAME = "Is Auth Sequence Based Signup " +
-            "Enabled";
-
     public static final String IS_ATTESTATION_ENABLED_PROPERTY_NAME = "IsAttestationEnabled";
     public static final String IS_ATTESTATION_ENABLED_DISPLAY_NAME = "Is Client Attestation Enabled";
     public static final String IS_APPLICATION_ENABLED_PROPERTY_NAME = "IsApplicationEnabled";
