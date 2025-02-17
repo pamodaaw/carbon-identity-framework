@@ -19,19 +19,15 @@
 package org.wso2.carbon.identity.user.registration.mgt.adapter;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.registration.mgt.Constants;
-import org.wso2.carbon.identity.user.registration.mgt.Constants.FlowElements;
 import org.wso2.carbon.identity.user.registration.mgt.model.ActionDTO;
 import org.wso2.carbon.identity.user.registration.mgt.model.BlockDTO;
 import org.wso2.carbon.identity.user.registration.mgt.model.ElementDTO;
@@ -42,7 +38,6 @@ import org.wso2.carbon.identity.user.registration.mgt.model.RegistrationFlowConf
 import org.wso2.carbon.identity.user.registration.mgt.model.RegistrationFlowDTO;
 import org.wso2.carbon.identity.user.registration.mgt.model.StepDTO;
 import static org.wso2.carbon.identity.user.registration.mgt.Constants.EXECUTOR;
-import static org.wso2.carbon.identity.user.registration.mgt.Constants.FlowElements.*;
 import static org.wso2.carbon.identity.user.registration.mgt.Constants.NEXT;
 
 public class FlowConvertor {
@@ -61,7 +56,10 @@ public class FlowConvertor {
             for (Map.Entry<String, ActionDTO> entry : step.getActions().entrySet()) {
 
                 ActionDTO action = entry.getValue();
-                if (TYPE.equals(action.getType())) {
+                if (Constants.COMPLETE.equals(action.getNextId())) {
+                    NodeConfig userOnboardingNode = createUserOnboardingNode();
+                    nextActionNodeDTOS.add(userOnboardingNode);
+                    registrationFlowConfig.addNodeConfig(userOnboardingNode);
                     continue;
                 }
                 processActionType(registrationFlowConfig, nextActionNodeDTOS, action, flowDTO.getElementDTOMap());
@@ -104,94 +102,14 @@ public class FlowConvertor {
         return nodeConfig;
     }
 
-    private static NodeConfig createExecutorNode(String nodeId, String nextId, ExecutorDTO executorDTO) {
+    private static NodeConfig createExecutorNode(ActionDTO actionDTO) {
 
         NodeConfig node = new NodeConfig();
-        node.setId(nodeId);
+        node.setId(actionDTO.getRef());
         node.setType(Constants.NodeTypes.TASK_EXECUTION);
-        node.addNextNodeId(nextId);
-        node.setExecutorConfig(executorDTO);
+        node.addNextNodeId(actionDTO.getNextId());
+        node.setExecutorConfig(actionDTO.getExecutor());
         return node;
-    }
-
-    private static Map<String, String> processElementsAsJsonString(JsonNode rootNode) throws JsonProcessingException {
-
-        // Retrieve all the elements in the flow.
-        JsonNode elementsArray = rootNode.get("elements");
-        if (elementsArray == null || !elementsArray.isArray()) {
-            System.out.println("'elements' array not found or is not an array.");
-            return null;
-        }
-        Map<String, String> elementsJsonMap = new HashMap<>();
-        for (JsonNode element : elementsArray) {
-
-            String elementId = element.get("id").asText();
-            elementsJsonMap.put(elementId, new ObjectMapper().writeValueAsString(element));
-        }
-        return elementsJsonMap;
-    }
-
-    private static Map<String, String> processBlocksAsJsonString(JsonNode rootNode) throws JsonProcessingException {
-
-        // Retrieve all the blocks in the flow.
-        JsonNode blocksArray = rootNode.get("blocks");
-        if (blocksArray == null || !blocksArray.isArray()) {
-            System.out.println("'blocks' array not found or is not an array.");
-            return null;
-        }
-        Map<String, String> blocksJsonMap = new HashMap<>();
-        for (JsonNode block : blocksArray) {
-
-            String blockId = block.get("id").asText();
-            blocksJsonMap.put(blockId, new ObjectMapper().writeValueAsString(block) );
-        }
-        return blocksJsonMap;
-    }
-
-
-    private static Map<String, BlockDTO> processBlocks(JsonNode rootNode) {
-
-        // Retrieve all the blocks in the flow.
-        JsonNode blocksArray = rootNode.get("blocks");
-        if (blocksArray == null || !blocksArray.isArray()) {
-            System.out.println("'blocks' array not found or is not an array.");
-            return null;
-        }
-        Map<String, BlockDTO> blockDTOMap = new HashMap<>();
-        for (JsonNode block : blocksArray) {
-
-            String blockId = block.get("id").asText();
-            BlockDTO blockDTO = new BlockDTO();
-            blockDTO.setId(blockId);
-
-            JsonNode blockElements = block.get("elements");
-            for (JsonNode blockElement : blockElements) {
-                blockDTO.addElementId(blockElement.asText());
-            }
-            blockDTOMap.put(blockId, blockDTO);
-        }
-        return blockDTOMap;
-    }
-
-    private static String getNextNodeId(JsonNode actionButton) {
-
-        String nextNodeId = "";
-        ArrayNode nextNode = (ArrayNode) actionButton.get(FlowElements.NEXT);
-        if (nextNode != null) {
-            for (JsonNode next : nextNode) {
-                if (next != null) {
-                    String nextNodeIdValue = next.asText();
-                    if (Constants.COMPLETE.equals(nextNodeIdValue)) {
-                        NodeConfig finalNode = createUserOnboardingNode();
-                        nextNodeId = finalNode.getId();
-                    } else {
-                        nextNodeId = nextNodeIdValue;
-                    }
-                    break;
-                }
-            }
-        }
-        return nextNodeId;
     }
 
     private static void processActionType(RegistrationFlowConfig sequence, List<NodeConfig> nextActionNodeDTOS,
@@ -207,22 +125,9 @@ public class FlowConvertor {
     private static void processExecutorAction(RegistrationFlowConfig sequence, List<NodeConfig> nextActionNodeDTOS, ActionDTO actionDTO,
                                               Map<String, ElementDTO> elementDTOMap) {
 
-        boolean firstExecutorInArray = true;
-        NodeConfig prevNode = null;
-        for (ExecutorDTO executor : actionDTO.getExecutors()) {
-            if (firstExecutorInArray) {
-                NodeConfig nodeDTO = createExecutorNode(actionDTO.getRef(), actionDTO.getNextId(), executor);
-                nextActionNodeDTOS.add(nodeDTO);
-                firstExecutorInArray = false;
-                prevNode = nodeDTO;
-            } else {
-                String nextExecutorId = UUID.randomUUID().toString();
-                NodeConfig nodeDTO = createExecutorNode(nextExecutorId, actionDTO.getNextId(), executor);
-                prevNode.getNextNodeIds().remove(actionDTO.getNextId());
-                prevNode.addNextNodeId(nextExecutorId);
-                sequence.addNodeConfig(nodeDTO);
-            }
-        }
+        NodeConfig nodeConfig = createExecutorNode(actionDTO);
+        nextActionNodeDTOS.add(nodeConfig);
+        sequence.addNodeConfig(nodeConfig);
         updateElementWithAction(actionDTO, elementDTOMap);
     }
 
@@ -238,7 +143,7 @@ public class FlowConvertor {
     // todo do we really need this?
     private static void updateElementWithAction(ActionDTO action, Map<String, ElementDTO> elementDTOMap) {
 
-        if (EXECUTOR.equals(action.getType()) && action.getExecutors() != null) {
+        if (EXECUTOR.equals(action.getType()) && action.getExecutor() != null) {
             if (elementDTOMap != null && elementDTOMap.containsKey(action.getRef())) {
                 elementDTOMap.get(action.getRef()).setAction(action);
             }
@@ -247,7 +152,8 @@ public class FlowConvertor {
 
     private static String processElementsInStep(List<String> elementsInStep,
                                                 Map<String, ElementDTO> elementDTOMap,
-                                                Map<String, BlockDTO> blockDTOMap) throws JsonProcessingException {
+                                                Map<String, BlockDTO> blockDTOMap)
+            throws JsonProcessingException {
 
         PageDTO pageDTO = new PageDTO();
         for (String elementId : elementsInStep) {

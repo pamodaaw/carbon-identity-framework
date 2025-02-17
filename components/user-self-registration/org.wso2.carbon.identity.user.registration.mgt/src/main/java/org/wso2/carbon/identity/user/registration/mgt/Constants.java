@@ -23,33 +23,15 @@ package org.wso2.carbon.identity.user.registration.mgt;
  */
 public class Constants {
 
-    public static final String NEW_FLOW = "newflow"; // temp constant to engage new flow.
     public static final String EXECUTOR_FOR_USER_ONBOARDING = "UserOnboardingExecutor";
 
     // Constants for the registration flow json definition.
     public static final String COMPLETE = "COMPLETE";
     public static final String NEXT = "NEXT";
     public static final String EXECUTOR = "EXECUTOR";
-    public static final String RULE = "RULE";
     public static final String EXECUTOR_NAME = "EXECUTOR_NAME";
     public static final String AUTHENTICATOR_ID = "AUTHENTICATOR_ID";
 
-    /**
-     * Constants for the flow elements.
-     */
-    public static class FlowElements {
-
-        public static final String NODES = "nodes";
-        public static final String ACTIONS = "actions";
-        public static final String ACTION = "action";
-        public static final String EXECUTORS = "executors";
-        public static final String ID = "id";
-        public static final String NEXT = "next";
-        public static final String TYPE = "type";
-        public static final String NAME = "name";
-        public static final String META = "meta";
-        public static final String IDP = "idp";
-    }
 
     /**
      * Constants for the node types.

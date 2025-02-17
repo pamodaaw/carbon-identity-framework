@@ -28,8 +28,7 @@ public class ActionDTO {
 
     private String ref;
     private String type;
-    // TODO is this a array or just one executor?
-    private final List<ExecutorDTO> executors = new ArrayList<>();
+    private ExecutorDTO executor;
     private String nextId;
 
 
@@ -48,14 +47,14 @@ public class ActionDTO {
         this.type = type;
     }
 
-    public List<ExecutorDTO> getExecutors() {
+    public ExecutorDTO getExecutor() {
 
-        return executors;
+        return executor;
     }
 
-    public void addExecutor(ExecutorDTO executorDTO) {
+    public void setExecutor(ExecutorDTO executor) {
 
-        this.executors.add(executorDTO);
+        this.executor = executor;
     }
 
     public String getRef() {
