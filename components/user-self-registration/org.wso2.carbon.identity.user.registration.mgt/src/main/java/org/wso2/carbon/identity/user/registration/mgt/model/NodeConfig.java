@@ -23,22 +23,35 @@ import java.util.List;
 
 public class NodeConfig {
 
-	private String id;
+	private int id;
+	private String uuid;
 	private String type;
+	private String triggeredActionId;
 	private boolean isFirstNode;
 	private String nextNodeId = null;
 	private String previousNodeId = null;
 	private List<String> nextNodeIds = new ArrayList<>();
+	private List<NodeEdge> edges = new ArrayList<>();
 	private ExecutorDTO executorConfig = null;
 
-	public String getId() {
+	public int getId() {
 
 		return id;
 	}
 
-	public void setId(String id) {
+	public void setId(int id) {
 
 		this.id = id;
+	}
+
+	public String getUuid() {
+
+		return uuid;
+	}
+
+	public void setUuid(String uuid) {
+
+		this.uuid = uuid;
 	}
 
 	public String getType() {
@@ -105,4 +118,24 @@ public class NodeConfig {
 
 		this.previousNodeId = previousNodeId;
 	}
+
+	public String getTriggeredActionId() {
+
+		return triggeredActionId;
+	}
+
+	public void setTriggeredActionId(String triggeredActionId) {
+
+		this.triggeredActionId = triggeredActionId;
+	}
+
+    public List<NodeEdge> getEdges() {
+
+        return edges;
+    }
+
+    public void addEdge(NodeEdge edge) {
+
+        this.edges.add(edge);
+    }
 }

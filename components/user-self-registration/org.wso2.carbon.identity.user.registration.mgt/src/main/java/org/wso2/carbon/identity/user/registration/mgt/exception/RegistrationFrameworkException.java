@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.registration.engine.exception;
+package org.wso2.carbon.identity.user.registration.mgt.exception;
 
 public class RegistrationFrameworkException extends Exception {
 

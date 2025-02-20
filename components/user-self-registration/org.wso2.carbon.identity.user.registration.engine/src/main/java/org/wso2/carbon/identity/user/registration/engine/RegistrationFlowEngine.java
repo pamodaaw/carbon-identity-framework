@@ -20,8 +20,8 @@ package org.wso2.carbon.identity.user.registration.engine;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.identity.user.registration.engine.exception.RegistrationFrameworkException;
-import org.wso2.carbon.identity.user.registration.engine.exception.RegistrationServerException;
+import org.wso2.carbon.identity.user.registration.mgt.exception.RegistrationFrameworkException;
+import org.wso2.carbon.identity.user.registration.mgt.exception.RegistrationServerException;
 import org.wso2.carbon.identity.user.registration.engine.internal.UserRegistrationServiceDataHolder;
 import org.wso2.carbon.identity.user.registration.mgt.model.NodeConfig;
 import org.wso2.carbon.identity.user.registration.mgt.model.RegistrationFlowConfig;
@@ -81,7 +81,7 @@ public class RegistrationFlowEngine {
                 if (LOG.isDebugEnabled()){
                     LOG.debug("Prompt only node is completed. Move to next node if there are any.");
                 }
-                nodeResponse.setPageDTO(sequence.getNodePageMappings().get(currentNode.getId()));
+                nodeResponse.setPageDTO(sequence.getNodePageMappings().get(currentNode.getUuid()));
                 nodeResponse.setStatus(STATUS_USER_INPUT_REQUIRED);
                 currentNode = moveToNextNode(sequence, currentNode);
                 context.setCurrentNode(currentNode);
@@ -89,14 +89,14 @@ public class RegistrationFlowEngine {
             }else if (!STATUS_NODE_COMPLETE.equals(nodeResponse.getStatus())) {
                 context.setCurrentNode(currentNode);
                 if (LOG.isDebugEnabled()){
-                    LOG.debug("User input is required for the current node: " + currentNode.getId());
+                    LOG.debug("User input is required for the current node: " + currentNode.getUuid());
                 }
                 if (STATUS_EXTERNAL_REDIRECTION.equals(nodeResponse.getStatus())) {
                     nodeResponse.setStatus(STATUS_EXTERNAL_REDIRECTION);
                     // TODO: Implement the external redirection sumbit logic.
                     context.setExecutorStatus(STATUS_ATTR_REQUIRED);
                 } else {
-                    nodeResponse.setPageDTO(sequence.getNodePageMappings().get(currentNode.getId()));
+                    nodeResponse.setPageDTO(sequence.getNodePageMappings().get(currentNode.getUuid()));
                     nodeResponse.setStatus(STATUS_USER_INPUT_REQUIRED);
                 }
                 return nodeResponse;
@@ -119,11 +119,11 @@ public class RegistrationFlowEngine {
         NodeConfig nextNode = regConfig.getNodeConfigs().get(nextNodeId);
         if (nextNode != null) {
             if(LOG.isDebugEnabled()) {
-                LOG.debug("Current node " + currentNode.getId() + " is completed. "
+                LOG.debug("Current node " + currentNode.getUuid() + " is completed. "
                                   + "Moving to the next node: " + nextNodeId
-                                  + " and setting " + currentNode.getId() + " as the previous node.");
+                                  + " and setting " + currentNode.getUuid() + " as the previous node.");
             }
-            nextNode.setPreviousNodeId(currentNode.getId());
+            nextNode.setPreviousNodeId(currentNode.getUuid());
         }
         return nextNode;
     }

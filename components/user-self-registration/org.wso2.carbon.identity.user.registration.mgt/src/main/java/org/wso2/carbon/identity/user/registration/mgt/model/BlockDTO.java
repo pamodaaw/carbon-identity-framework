@@ -26,7 +26,7 @@ import java.util.List;
  */
 public class BlockDTO {
 
-    private final List<String> elements = new ArrayList<>();
+    private final List<ElementDTO> elements = new ArrayList<>();
     private String id;
 
     public String getId() {
@@ -39,13 +39,13 @@ public class BlockDTO {
         this.id = id;
     }
 
-    public List<String> getElementIds() {
+    public List<ElementDTO> getElements() {
 
         return elements;
     }
 
-    public void addElementId(String elementId) {
+    public void addElementDto(ElementDTO element) {
 
-        this.elements.add(elementId);
+        this.elements.add(element);
     }
 }

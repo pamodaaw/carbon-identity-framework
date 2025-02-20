@@ -49,27 +49,21 @@ public class RegistrationFlowMgtService {
      * @param flowDTO  The registration flow.
      * @param tenantID The tenant ID.
      */
-    public void storeRegistrationFlow(RegistrationFlowDTO flowDTO, String tenantID) {
+    public void addRegistrationFlow(RegistrationFlowDTO flowDTO, int tenantID) {
 
-        // Call the FlowConvertor to convert the flow to a DTO.
-        try {
-            RegistrationFlowConfig flowConfig = FlowConvertor.getSequence(flowDTO);
-            RegistrationFlowDAO.getInstance().addRegistrationObject(flowConfig, tenantID);
-        } catch (IOException e) {
-            LOG.error("Error while converting the flow to a DTO.", e);
-            throw new RuntimeException(e);
-        }
+//        try {
+//            RegistrationFlowConfig flowConfig = FlowConvertor.getSequence(flowDTO);
+//            RegistrationFlowDAO.getInstance().addRegistrationObject(flowConfig, tenantID);
+//        } catch (IOException e) {
+//            LOG.error("Error while converting the flow to a DTO.", e);
+//            throw new RuntimeException(e);
+//        }
+        LOG.info("Adding registration flow for tenant: " + tenantID);
     }
 
-    /**
-     * Get the full registration flow as a JSON string.
-     *
-     * @param tenantID The tenant ID.
-     * @return The registration flow as a JSON string.
-     */
-    public String getRegistrationFlowJson(String tenantID) {
+    public RegistrationFlowDTO getRegistrationFlow(int tenantID) {
 
-        return RegistrationFlowDAO.getInstance().getFlowJsonByTenantId(tenantID);
+        return new RegistrationFlowDTO();
     }
 
     /**
@@ -77,7 +71,7 @@ public class RegistrationFlowMgtService {
      *
      * @param tenantID The tenant ID.
      */
-    public RegistrationFlowConfig getRegistrationFlow(String tenantID) {
+    public RegistrationFlowConfig getRegistrationFlowConfig(int tenantID) {
 
         // Call the DAO to retrieve the flow.
         return RegistrationFlowDAO.getInstance().getRegistrationObjectByTenantId(tenantID);

@@ -31,11 +31,11 @@ import org.wso2.carbon.identity.application.mgt.ApplicationConstants;
 import org.wso2.carbon.identity.application.mgt.ApplicationManagementService;
 import org.wso2.carbon.identity.claim.metadata.mgt.ClaimMetadataHandler;
 import org.wso2.carbon.identity.claim.metadata.mgt.exception.ClaimMetadataException;
-import org.wso2.carbon.identity.user.registration.engine.exception.RegistrationClientException;
+import org.wso2.carbon.identity.user.registration.mgt.exception.RegistrationClientException;
 import org.wso2.carbon.identity.user.registration.engine.cache.RegistrationContextCache;
 import org.wso2.carbon.identity.user.registration.engine.cache.RegistrationContextCacheEntry;
 import org.wso2.carbon.identity.user.registration.engine.cache.RegistrationContextCacheKey;
-import org.wso2.carbon.identity.user.registration.engine.exception.RegistrationFrameworkException;
+import org.wso2.carbon.identity.user.registration.mgt.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.engine.model.RegistrationContext;
 
 import java.util.Arrays;

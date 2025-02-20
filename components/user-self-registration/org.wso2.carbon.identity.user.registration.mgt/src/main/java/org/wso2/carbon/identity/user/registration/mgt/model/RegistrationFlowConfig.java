@@ -26,9 +26,8 @@ public class RegistrationFlowConfig {
     private String id;
     private String name;
     private String firstNodeId;
-    private String flowJson;
     private final Map<String, NodeConfig> nodeConfigs = new HashMap<>();
-    private final Map<String, String> nodePageMappings = new HashMap<>();
+    private final Map<String, StepDTO> nodePageMappings = new HashMap<>();
 
     public String getId() {
 
@@ -60,34 +59,23 @@ public class RegistrationFlowConfig {
         this.firstNodeId = firstNodeId;
     }
 
-    public String getFlowJson() {
-
-        return flowJson;
-    }
-
-    public void setFlowJson(String flowJson) {
-
-        this.flowJson = flowJson;
-    }
-
     public Map<String, NodeConfig> getNodeConfigs() {
 
         return nodeConfigs;
     }
 
-
     public void addNodeConfig(NodeConfig node) {
 
-        this.nodeConfigs.put(node.getId(), node);
+        this.nodeConfigs.put(node.getUuid(), node);
     }
 
-    public Map<String, String> getNodePageMappings() {
+    public Map<String, StepDTO> getNodePageMappings() {
 
         return nodePageMappings;
     }
 
-    public void addNodePageMapping(String nodeId, String pageContent) {
+    public void addNodePageMapping(String nodeId, StepDTO stepDTO) {
 
-        this.nodePageMappings.put(nodeId, pageContent);
+        this.nodePageMappings.put(nodeId, stepDTO);
     }
 }

@@ -18,7 +18,7 @@
 
 package org.wso2.carbon.identity.user.registration.engine.node;
 
-import org.wso2.carbon.identity.user.registration.engine.exception.RegistrationFrameworkException;
+import org.wso2.carbon.identity.user.registration.mgt.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.mgt.model.NodeConfig;
 import org.wso2.carbon.identity.user.registration.engine.model.NodeResponse;
 import org.wso2.carbon.identity.user.registration.engine.model.RegistrationContext;

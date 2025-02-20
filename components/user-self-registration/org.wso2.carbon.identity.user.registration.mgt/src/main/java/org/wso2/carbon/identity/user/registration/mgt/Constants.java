@@ -24,6 +24,8 @@ package org.wso2.carbon.identity.user.registration.mgt;
 public class Constants {
 
     public static final String EXECUTOR_FOR_USER_ONBOARDING = "UserOnboardingExecutor";
+    public static final String EXECUTOR_FOR_PROMPT = "ViewPromptExecutor";
+
 
     // Constants for the registration flow json definition.
     public static final String COMPLETE = "COMPLETE";
@@ -31,7 +33,6 @@ public class Constants {
     public static final String EXECUTOR = "EXECUTOR";
     public static final String EXECUTOR_NAME = "EXECUTOR_NAME";
     public static final String AUTHENTICATOR_ID = "AUTHENTICATOR_ID";
-
 
     /**
      * Constants for the node types.
@@ -41,5 +42,23 @@ public class Constants {
         public static final String PROMPT = "PROMPT";
         public static final String DECISION = "DECISION";
         public static final String TASK_EXECUTION = "TASK_EXECUTION";
+    }
+
+    /**
+     * Constants for the step types.
+     */
+    public static class StepTypes {
+
+        public static final String VIEW = "VIEW";
+        public static final String TRIGGER = "SERVICE";
+    }
+
+    /**
+     * Constants for the action types.
+     */
+    public static class ActionTypes {
+
+        public static final String EXECUTOR = "EXECUTOR";
+        public static final String NEXT = "NEXT";
     }
 }

@@ -19,25 +19,18 @@
 package org.wso2.carbon.identity.user.registration.mgt.model;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class StepDTO {
 
     private String id;
-    private Map<String, ActionDTO> actions = new HashMap<>();
-    private List<String> elementIds = new ArrayList<>();
-
-    public Map<String, ActionDTO> getActions() {
-
-        return actions;
-    }
-
-    public void setActions(Map<String, ActionDTO> actions) {
-
-        this.actions = actions;
-    }
+    private String type;
+    private double coordinateX;
+    private double coordinateY;
+    private double width;
+    private double height;
+    private List<BlockDTO> blocks = new ArrayList<>();
+    private ActionDTO actionDTO;
 
     public String getId() {
 
@@ -49,13 +42,73 @@ public class StepDTO {
         this.id = id;
     }
 
-    public List<String> getElementIds() {
+    public String getType() {
 
-        return elementIds;
+        return type;
     }
 
-    public void setElementIds(List<String> elementIds) {
+    public void setType(String type) {
 
-        this.elementIds = elementIds;
+        this.type = type;
+    }
+
+    public double getCoordinateX() {
+
+        return coordinateX;
+    }
+
+    public void setCoordinateX(double coordinateX) {
+
+        this.coordinateX = coordinateX;
+    }
+
+    public double getCoordinateY() {
+
+        return coordinateY;
+    }
+
+    public void setCoordinateY(double coordinateY) {
+
+        this.coordinateY = coordinateY;
+    }
+
+    public double getWidth() {
+
+        return width;
+    }
+
+    public void setWidth(double width) {
+
+        this.width = width;
+    }
+
+    public double getHeight() {
+
+        return height;
+    }
+
+    public void setHeight(double height) {
+
+        this.height = height;
+    }
+
+    public List<BlockDTO> getBlocks() {
+
+        return blocks;
+    }
+
+    public void setBlocks(List<BlockDTO> blocks) {
+
+        this.blocks = blocks;
+    }
+
+    public ActionDTO getActionDTO() {
+
+        return actionDTO;
+    }
+
+    public void setActionDTO(ActionDTO actionDTO) {
+
+        this.actionDTO = actionDTO;
     }
 }

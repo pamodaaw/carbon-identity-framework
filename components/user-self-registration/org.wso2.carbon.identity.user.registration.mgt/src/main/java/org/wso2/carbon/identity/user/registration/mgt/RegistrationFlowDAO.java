@@ -58,11 +58,9 @@ public class RegistrationFlowDAO {
      * @param regDTO   The registration object.
      * @param tenantId The tenant ID.
      */
-    public void addRegistrationObject(RegistrationFlowConfig regDTO, String tenantId) {
+    public void addRegistrationObject(RegistrationFlowConfig regDTO, int tenantId) {
 
         JdbcTemplate jdbcTemplate = JdbcUtils.getNewTemplate();
-        byte[] jsonBytes = regDTO.getFlowJson().getBytes();
-        ByteArrayInputStream flowAsBlob = new ByteArrayInputStream(jsonBytes);
 
         try {
             jdbcTemplate.withTransaction(template -> {
@@ -71,9 +69,8 @@ public class RegistrationFlowDAO {
                         "INSERT INTO REG_FLOW (ID, TENANT_ID, FLOW_NAME, FLOW_JSON) VALUES (?, ?, ?, ?)",
                         preparedStatement -> {
                             preparedStatement.setString(1, regDTO.getId());
-                            preparedStatement.setString(2, tenantId);
+                            preparedStatement.setInt(2, tenantId);
                             preparedStatement.setString(3, "default");
-                            preparedStatement.setBlob(4, flowAsBlob);
                         }, regDTO, false);
 
                 // Insert into REG_NODE
@@ -83,13 +80,13 @@ public class RegistrationFlowDAO {
                     int regNodeId = template.executeInsert("INSERT INTO REG_NODE (NODE_ID, FLOW_ID, NODE_TYPE, " +
                                                                    "IS_FIRST_NODE) VALUES (?, ?, ?, ?)",
                                                            preparedStatement -> {
-                                                               preparedStatement.setString(1, node.getId());
+                                                               preparedStatement.setString(1, node.getUuid());
                                                                preparedStatement.setString(2, regDTO.getId());
                                                                preparedStatement.setString(3, node.getType());
                                                                preparedStatement.setBoolean(4, node.isFirstNode());
                                                            }, entry, true);
 
-                    nodeIdToRegNodeIdMap.put(node.getId(), regNodeId);
+                    nodeIdToRegNodeIdMap.put(node.getUuid(), regNodeId);
                     // Insert into REG_NODE_PROPERTIES
                     ExecutorDTO executorConfig = node.getExecutorConfig();
                     if (executorConfig != null) {
@@ -98,7 +95,7 @@ public class RegistrationFlowDAO {
                                         "(?, " +
                                         "?, ?)",
                                 preparedStatement -> {
-                                    preparedStatement.setInt(1, nodeIdToRegNodeIdMap.get(node.getId()));
+                                    preparedStatement.setInt(1, nodeIdToRegNodeIdMap.get(node.getUuid()));
                                     preparedStatement.setString(2, Constants.EXECUTOR_NAME);
                                     preparedStatement.setString(3, executorConfig.getName());
                                 }, null, false);
@@ -108,7 +105,7 @@ public class RegistrationFlowDAO {
                                         "(?, " +
                                         "?, ?)",
                                 preparedStatement -> {
-                                    preparedStatement.setInt(1, nodeIdToRegNodeIdMap.get(node.getId()));
+                                    preparedStatement.setInt(1, nodeIdToRegNodeIdMap.get(node.getUuid()));
                                     preparedStatement.setString(2, Constants.AUTHENTICATOR_ID);
                                     preparedStatement.setString(3, executorConfig.getAuthenticatorId());
                                 }, null, false);
@@ -116,15 +113,15 @@ public class RegistrationFlowDAO {
                 }
 
                 // Insert into REG_PAGE
-                for (Map.Entry<String, String> entry : regDTO.getNodePageMappings().entrySet()) {
-                    int regNodeId = nodeIdToRegNodeIdMap.get(entry.getKey());
-                    template.executeInsert(
-                            "INSERT INTO REG_PAGE (REG_NODE_ID, PAGE_CONTENT) VALUES (?, ?)",
-                            preparedStatement -> {
-                                preparedStatement.setInt(1, regNodeId);
-                                preparedStatement.setBlob(2, new ByteArrayInputStream(entry.getValue().getBytes()));
-                            }, entry, false);
-                }
+//                for (Map.Entry<String, String> entry : regDTO.getNodePageMappings().entrySet()) {
+//                    int regNodeId = nodeIdToRegNodeIdMap.get(entry.getKey());
+//                    template.executeInsert(
+//                            "INSERT INTO REG_PAGE (REG_NODE_ID, PAGE_CONTENT) VALUES (?, ?)",
+//                            preparedStatement -> {
+//                                preparedStatement.setInt(1, regNodeId);
+//                                preparedStatement.setBlob(2, new ByteArrayInputStream(entry.getValue().getBytes()));
+//                            }, entry, false);
+//                }
                 return null;
             });
         } catch (TransactionException e) {
@@ -132,7 +129,7 @@ public class RegistrationFlowDAO {
         }
     }
 
-    public RegistrationFlowConfig getRegistrationObjectByTenantId(String tenantId) {
+    public RegistrationFlowConfig getRegistrationObjectByTenantId(int tenantId) {
 
         JdbcTemplate jdbcTemplate = JdbcUtils.getNewTemplate();
         try {
@@ -142,9 +139,8 @@ public class RegistrationFlowDAO {
                                                    (resultSet, rowNumber) -> {
                                                        RegistrationFlowConfig config = new RegistrationFlowConfig();
                                                        config.setId(resultSet.getString("ID"));
-                                                       config.setFlowJson(new String(resultSet.getBytes("FLOW_JSON")));
                                                        return config;
-                                                   }, preparedStatement -> preparedStatement.setString(1, tenantId));
+                                                   }, preparedStatement -> preparedStatement.setInt(1, tenantId));
 
             if (registrationFlowConfig == null) {
                 return null;
@@ -157,17 +153,17 @@ public class RegistrationFlowDAO {
             List<NodeConfig> nodes =
                     jdbcTemplate.executeQuery("SELECT * FROM REG_NODE WHERE FLOW_ID = ?", (resultSet, rowNumber) -> {
                         NodeConfig node = new NodeConfig();
-                        node.setId(resultSet.getString("NODE_ID"));
+                        node.setUuid(resultSet.getString("NODE_ID"));
                         node.setType(resultSet.getString("NODE_TYPE"));
                         node.setFirstNode(resultSet.getBoolean("IS_FIRST_NODE"));
                         int regNodeId = resultSet.getInt("ID");
-                        nodeIdToRegNodeIdMap.put(node.getId(), regNodeId);
+                        nodeIdToRegNodeIdMap.put(node.getUuid(), regNodeId);
                         return node;
                     }, preparedStatement -> preparedStatement.setString(1, flowId));
 
             for (NodeConfig node : nodes) {
                 // Retrieve REG_NODE_PROPERTIES
-                int regNodeId = nodeIdToRegNodeIdMap.get(node.getId());
+                int regNodeId = nodeIdToRegNodeIdMap.get(node.getUuid());
                 Map<String, String> properties =
                         jdbcTemplate.executeQuery("SELECT * FROM REG_NODE_PROPERTIES WHERE REG_NODE_ID = ?",
                                                   (resultSet, rowNumber) -> {
@@ -186,10 +182,10 @@ public class RegistrationFlowDAO {
             }
             // Retrieve REG_PAGE
             for (NodeConfig node : nodes) {
-                int regNodeId = nodeIdToRegNodeIdMap.get(node.getId());
+                int regNodeId = nodeIdToRegNodeIdMap.get(node.getUuid());
                 jdbcTemplate.executeQuery("SELECT * FROM REG_PAGE WHERE REG_NODE_ID = ?", (resultSet, rowNumber) -> {
                     String pageContent = new String(resultSet.getBytes("PAGE_CONTENT"));
-                    registrationFlowConfig.addNodePageMapping(node.getId(), pageContent);
+//                    registrationFlowConfig.addNodePageMapping(node.getUuid(), pageContent);
                     return null;
                 }, preparedStatement -> preparedStatement.setInt(1, regNodeId));
             }

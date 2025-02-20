@@ -29,16 +29,15 @@ public class ElementDTO {
     private String id;
     private String category;
     private String type;
-    private String variant;
+    private String identifier;
     private final Map<String, Object> properties = new HashMap<>();
     private ActionDTO action;
+    private ValidationDTO validation;
 
-    public ElementDTO(String id, String category, String type, String variant) {
+    public ElementDTO(String id, String type) {
 
         this.id = id;
-        this.category = category;
         this.type = type;
-        this.variant = variant;
     }
 
     public String getId() {
@@ -51,16 +50,6 @@ public class ElementDTO {
         this.id = id;
     }
 
-    public String getCategory() {
-
-        return category;
-    }
-
-    public void setCategory(String category) {
-
-        this.category = category;
-    }
-
     public String getType() {
 
         return type;
@@ -69,16 +58,6 @@ public class ElementDTO {
     public void setType(String type) {
 
         this.type = type;
-    }
-
-    public String getVariant() {
-
-        return variant;
-    }
-
-    public void setVariant(String variant) {
-
-        this.variant = variant;
     }
 
     public Map<String, Object> getProperties() {
@@ -99,5 +78,35 @@ public class ElementDTO {
     public void setAction(ActionDTO action) {
 
         this.action = action;
+    }
+
+    public String getIdentifier() {
+
+        return identifier;
+    }
+
+    public void setIdentifier(String identifier) {
+
+        this.identifier = identifier;
+    }
+
+    public ValidationDTO getValidation() {
+
+        return validation;
+    }
+
+    public void setValidation(ValidationDTO validation) {
+
+        this.validation = validation;
+    }
+
+    public String getCategory() {
+
+        return category;
+    }
+
+    public void setCategory(String category) {
+
+        this.category = category;
     }
 }

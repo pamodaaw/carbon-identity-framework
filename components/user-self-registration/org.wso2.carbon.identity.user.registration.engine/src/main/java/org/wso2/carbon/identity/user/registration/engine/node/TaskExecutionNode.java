@@ -32,10 +32,10 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.wso2.carbon.identity.user.registration.engine.executor.RegistrationExecutor;
 import org.wso2.carbon.identity.user.registration.engine.executor.action.Authentication;
-import org.wso2.carbon.identity.user.registration.engine.exception.RegistrationFrameworkException;
+import org.wso2.carbon.identity.user.registration.mgt.exception.RegistrationFrameworkException;
 import org.wso2.carbon.identity.user.registration.engine.executor.action.AttributeCollection;
 import org.wso2.carbon.identity.user.registration.engine.executor.action.CredentialEnrollment;
-import org.wso2.carbon.identity.user.registration.engine.exception.RegistrationServerException;
+import org.wso2.carbon.identity.user.registration.mgt.exception.RegistrationServerException;
 import org.wso2.carbon.identity.user.registration.engine.executor.Executor;
 import org.wso2.carbon.identity.user.registration.engine.executor.action.Verification;
 import org.wso2.carbon.identity.user.registration.engine.internal.UserRegistrationServiceDataHolder;
@@ -67,7 +67,7 @@ public class TaskExecutionNode implements Node {
             throw new RegistrationServerException(ERROR_EXECUTOR_NOT_FOUND.getCode(),
                                                   ERROR_EXECUTOR_NOT_FOUND.getMessage(),
                                                   String.format(ERROR_EXECUTOR_NOT_FOUND.getDescription(),
-                                                                configs.getId()));
+                                                                configs.getUuid()));
         }
 
         String executorName = configs.getExecutorConfig().getName();

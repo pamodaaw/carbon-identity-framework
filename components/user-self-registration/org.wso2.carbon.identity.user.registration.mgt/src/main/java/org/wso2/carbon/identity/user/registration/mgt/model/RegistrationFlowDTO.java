@@ -19,48 +19,11 @@
 package org.wso2.carbon.identity.user.registration.mgt.model;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class RegistrationFlowDTO {
 
     private List<StepDTO> steps = new ArrayList<>();
-    private Map<String, ElementDTO> elementDTOMap = new HashMap<>();
-    private Map<String, BlockDTO> blockDTOMap = new HashMap<>();
-    private String flowJson;
-
-    public Map<String, ElementDTO> getElementDTOMap() {
-
-        return elementDTOMap;
-    }
-
-    public void setElementDTOMap(
-            Map<String, ElementDTO> elementDTOMap) {
-
-        this.elementDTOMap = elementDTOMap;
-    }
-
-    public Map<String, BlockDTO> getBlockDTOMap() {
-
-        return blockDTOMap;
-    }
-
-    public void setBlockDTOMap(
-            Map<String, BlockDTO> blockDTOMap) {
-
-        this.blockDTOMap = blockDTOMap;
-    }
-
-    public String getFlowJson() {
-
-        return flowJson;
-    }
-
-    public void setFlowJson(String flowJson) {
-
-        this.flowJson = flowJson;
-    }
 
     public List<StepDTO> getSteps() {
 

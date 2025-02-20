@@ -20,8 +20,8 @@ package org.wso2.carbon.identity.user.registration.engine;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.wso2.carbon.identity.user.registration.engine.exception.RegistrationFrameworkException;
-import org.wso2.carbon.identity.user.registration.engine.exception.RegistrationServerException;
+import org.wso2.carbon.identity.user.registration.mgt.exception.RegistrationFrameworkException;
+import org.wso2.carbon.identity.user.registration.mgt.exception.RegistrationServerException;
 import org.wso2.carbon.identity.user.registration.engine.internal.UserRegistrationServiceDataHolder;
 import org.wso2.carbon.identity.user.registration.mgt.model.RegistrationFlowConfig;
 import org.wso2.carbon.identity.user.registration.engine.model.ExecutionState;
@@ -41,7 +41,7 @@ public class UserRegistrationFlowService {
 
     private static final Log LOG = LogFactory.getLog(UserRegistrationFlowService.class);
     private static final UserRegistrationFlowService instance = new UserRegistrationFlowService();
-    private static final String superTenantDomain = "carbon.super";
+    private static final int superTenantDomain = -1234;
 
     private UserRegistrationFlowService() {
 
@@ -65,7 +65,7 @@ public class UserRegistrationFlowService {
         String flowId = UUID.randomUUID().toString();
         RegistrationContext context = new RegistrationContext();
         RegistrationFlowConfig flowConfig =
-                UserRegistrationServiceDataHolder.getRegistrationFlowMgtService().getRegistrationFlow(superTenantDomain);
+                UserRegistrationServiceDataHolder.getRegistrationFlowMgtService().getRegistrationFlowConfig(superTenantDomain);
         context.setTenantDomain(tenantDomain);
         context.setRegSequence(flowConfig);
         context.setContextIdentifier(flowId);

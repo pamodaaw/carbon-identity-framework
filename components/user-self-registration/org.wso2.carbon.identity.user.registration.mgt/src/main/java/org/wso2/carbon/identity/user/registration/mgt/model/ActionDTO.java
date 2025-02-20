@@ -26,11 +26,9 @@ import java.util.List;
  */
 public class ActionDTO {
 
-    private String ref;
     private String type;
     private ExecutorDTO executor;
     private String nextId;
-
 
     public ActionDTO(String type) {
 
@@ -55,16 +53,6 @@ public class ActionDTO {
     public void setExecutor(ExecutorDTO executor) {
 
         this.executor = executor;
-    }
-
-    public String getRef() {
-
-        return ref;
-    }
-
-    public void setRef(String ref) {
-
-        this.ref = ref;
     }
 
     public String getNextId() {

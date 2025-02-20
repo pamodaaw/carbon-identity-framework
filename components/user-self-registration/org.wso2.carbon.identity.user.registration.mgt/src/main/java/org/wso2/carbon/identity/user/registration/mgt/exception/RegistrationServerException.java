@@ -16,7 +16,7 @@
  * under the License.
  */
 
-package org.wso2.carbon.identity.user.registration.engine.exception;
+package org.wso2.carbon.identity.user.registration.mgt.exception;
 
 /**
  * Represents the server exception that occurs in the registration framework.
