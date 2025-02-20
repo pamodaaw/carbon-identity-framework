@@ -23,12 +23,15 @@ import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import org.wso2.carbon.identity.rule.metadata.exception.RuleMetadataConfigException;
-import org.wso2.carbon.identity.rule.metadata.model.FieldDefinition;
-import org.wso2.carbon.identity.rule.metadata.model.InputValue;
-import org.wso2.carbon.identity.rule.metadata.model.OptionsInputValue;
-import org.wso2.carbon.identity.rule.metadata.model.OptionsReferenceValue;
-import org.wso2.carbon.identity.rule.metadata.model.Value;
+import org.wso2.carbon.identity.rule.metadata.api.exception.RuleMetadataConfigException;
+import org.wso2.carbon.identity.rule.metadata.api.model.FieldDefinition;
+import org.wso2.carbon.identity.rule.metadata.api.model.InputValue;
+import org.wso2.carbon.identity.rule.metadata.api.model.OptionsInputValue;
+import org.wso2.carbon.identity.rule.metadata.api.model.OptionsReferenceValue;
+import org.wso2.carbon.identity.rule.metadata.api.model.Value;
+import org.wso2.carbon.identity.rule.metadata.internal.config.FieldDefinitionConfig;
+import org.wso2.carbon.identity.rule.metadata.internal.config.OperatorConfig;
+import org.wso2.carbon.identity.rule.metadata.internal.config.RuleMetadataConfigFactory;
 
 import java.io.File;
 import java.util.Map;
@@ -36,6 +39,7 @@ import java.util.Objects;
 
 import static org.mockito.Mockito.mockStatic;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 import static org.testng.AssertJUnit.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
 
@@ -153,7 +157,6 @@ public class FieldDefinitionConfigTest {
 
         return new Object[][]{
                 {"configs/invalid-fields-missing-field-name.json"},
-                {"configs/invalid-fields-missing-field-displayname.json"},
                 {"configs/invalid-fields-unregistered-operator.json"},
                 {"configs/invalid-fields-invalid-input-type.json"},
                 {"configs/invalid-fields-invalid-value-type.json"},
@@ -163,7 +166,6 @@ public class FieldDefinitionConfigTest {
                 {"configs/invalid-fields-missing-link-href.json"},
                 {"configs/invalid-fields-missing-link-method.json"},
                 {"configs/invalid-fields-missing-link-rel.json"},
-                {"configs/invalid-fields-missing-values.json"},
                 {"unavailable-file.json"}
         };
     }
@@ -174,5 +176,25 @@ public class FieldDefinitionConfigTest {
 
         FieldDefinitionConfig.load(filePath.equals("unavailable-file.json") ? new File(filePath) :
                 new File(getClass().getClassLoader().getResource(filePath).getFile()), operatorConfig);
+    }
+
+    @DataProvider(name = "validConfigFiles")
+    public Object[][] validConfigFiles() {
+
+        return new Object[][]{
+                {"configs/invalid-fields-missing-field-displayname.json"},
+                {"configs/invalid-fields-missing-values.json"},
+        };
+    }
+
+    @Test(dataProvider = "validConfigFiles")
+    public void testLoadFieldDefinitionsFromValidConfig(String filePath) throws RuleMetadataConfigException {
+
+        try {
+            FieldDefinitionConfig.load(filePath.equals("unavailable-file.json") ? new File(filePath) :
+                    new File(getClass().getClassLoader().getResource(filePath).getFile()), operatorConfig);
+        } catch (Exception e) {
+            fail();
+        }
     }
 }

@@ -22,16 +22,16 @@ import org.mockito.MockedStatic;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import org.wso2.carbon.identity.rule.metadata.config.RuleMetadataConfigFactory;
-import org.wso2.carbon.identity.rule.metadata.exception.RuleMetadataConfigException;
-import org.wso2.carbon.identity.rule.metadata.exception.RuleMetadataException;
-import org.wso2.carbon.identity.rule.metadata.exception.RuleMetadataServerException;
-import org.wso2.carbon.identity.rule.metadata.model.FieldDefinition;
-import org.wso2.carbon.identity.rule.metadata.model.FlowType;
-import org.wso2.carbon.identity.rule.metadata.model.OptionsInputValue;
-import org.wso2.carbon.identity.rule.metadata.model.OptionsReferenceValue;
-import org.wso2.carbon.identity.rule.metadata.model.Value;
-import org.wso2.carbon.identity.rule.metadata.provider.impl.StaticRuleMetadataProvider;
+import org.wso2.carbon.identity.rule.metadata.api.exception.RuleMetadataConfigException;
+import org.wso2.carbon.identity.rule.metadata.api.exception.RuleMetadataException;
+import org.wso2.carbon.identity.rule.metadata.api.exception.RuleMetadataServerException;
+import org.wso2.carbon.identity.rule.metadata.api.model.FieldDefinition;
+import org.wso2.carbon.identity.rule.metadata.api.model.FlowType;
+import org.wso2.carbon.identity.rule.metadata.api.model.OptionsInputValue;
+import org.wso2.carbon.identity.rule.metadata.api.model.OptionsReferenceValue;
+import org.wso2.carbon.identity.rule.metadata.api.model.Value;
+import org.wso2.carbon.identity.rule.metadata.internal.config.RuleMetadataConfigFactory;
+import org.wso2.carbon.identity.rule.metadata.internal.provider.impl.StaticRuleMetadataProvider;
 import org.wso2.carbon.utils.CarbonUtils;
 
 import java.util.List;
@@ -107,10 +107,12 @@ public class StaticRuleMetadataProviderTest {
         assertEquals(applicationFieldValue.getValueDisplayAttribute(), "name");
 
         assertEquals(applicationFieldValue.getLinks().size(), 2);
-        assertEquals(applicationFieldValue.getLinks().get(0).getHref(), "/applications?offset=0&limit=10");
+        assertEquals(applicationFieldValue.getLinks().get(0).getHref(),
+                "/applications?excludeSystemPortals=true&offset=0&limit=10");
         assertEquals(applicationFieldValue.getLinks().get(0).getRel(), "values");
         assertEquals(applicationFieldValue.getLinks().get(0).getMethod(), "GET");
-        assertEquals(applicationFieldValue.getLinks().get(1).getHref(), "/applications?filter=name+eq+*&limit=10");
+        assertEquals(applicationFieldValue.getLinks().get(1).getHref(),
+                "/applications?excludeSystemPortals=true&filter=name+eq+*&limit=10");
         assertEquals(applicationFieldValue.getLinks().get(1).getRel(), "filter");
         assertEquals(applicationFieldValue.getLinks().get(1).getMethod(), "GET");
 

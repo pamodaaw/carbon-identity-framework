@@ -18,13 +18,13 @@
 
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
 
-<suite name="org.wso2.carbon.identity.action.execution">
+<suite name="org.wso2.carbon.identity.rule.metadata">
     <test name="rule-metadata-config-tests">
         <classes>
             <class name="org.wso2.carbon.identity.rule.metadata.config.OperatorConfigTest"/>
             <class name="org.wso2.carbon.identity.rule.metadata.config.FieldDefinitionConfigTest"/>
             <class name="org.wso2.carbon.identity.rule.metadata.config.FlowConfigTest"/>
-            <class name="org.wso2.carbon.identity.rule.metadata.config.RuleMetadataConfigFactory"/>
+            <class name="org.wso2.carbon.identity.rule.metadata.config.RuleMetadataConfigFactoryTest"/>
         </classes>
     </test>
     <test name="rule-metadata-provider-test">

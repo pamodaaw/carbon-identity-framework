@@ -24,23 +24,23 @@ import org.mockito.MockitoAnnotations;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import org.wso2.carbon.identity.rule.metadata.config.OperatorConfig;
-import org.wso2.carbon.identity.rule.metadata.config.RuleMetadataConfigFactory;
-import org.wso2.carbon.identity.rule.metadata.exception.RuleMetadataConfigException;
-import org.wso2.carbon.identity.rule.metadata.exception.RuleMetadataException;
-import org.wso2.carbon.identity.rule.metadata.exception.RuleMetadataServerException;
-import org.wso2.carbon.identity.rule.metadata.model.Field;
-import org.wso2.carbon.identity.rule.metadata.model.FieldDefinition;
-import org.wso2.carbon.identity.rule.metadata.model.FlowType;
-import org.wso2.carbon.identity.rule.metadata.model.InputValue;
-import org.wso2.carbon.identity.rule.metadata.model.Link;
-import org.wso2.carbon.identity.rule.metadata.model.Operator;
-import org.wso2.carbon.identity.rule.metadata.model.OptionsInputValue;
-import org.wso2.carbon.identity.rule.metadata.model.OptionsReferenceValue;
-import org.wso2.carbon.identity.rule.metadata.model.OptionsValue;
-import org.wso2.carbon.identity.rule.metadata.model.Value;
-import org.wso2.carbon.identity.rule.metadata.provider.RuleMetadataProvider;
-import org.wso2.carbon.identity.rule.metadata.service.impl.RuleMetadataManager;
+import org.wso2.carbon.identity.rule.metadata.api.exception.RuleMetadataConfigException;
+import org.wso2.carbon.identity.rule.metadata.api.exception.RuleMetadataException;
+import org.wso2.carbon.identity.rule.metadata.api.exception.RuleMetadataServerException;
+import org.wso2.carbon.identity.rule.metadata.api.model.Field;
+import org.wso2.carbon.identity.rule.metadata.api.model.FieldDefinition;
+import org.wso2.carbon.identity.rule.metadata.api.model.FlowType;
+import org.wso2.carbon.identity.rule.metadata.api.model.InputValue;
+import org.wso2.carbon.identity.rule.metadata.api.model.Link;
+import org.wso2.carbon.identity.rule.metadata.api.model.Operator;
+import org.wso2.carbon.identity.rule.metadata.api.model.OptionsInputValue;
+import org.wso2.carbon.identity.rule.metadata.api.model.OptionsReferenceValue;
+import org.wso2.carbon.identity.rule.metadata.api.model.OptionsValue;
+import org.wso2.carbon.identity.rule.metadata.api.model.Value;
+import org.wso2.carbon.identity.rule.metadata.api.provider.RuleMetadataProvider;
+import org.wso2.carbon.identity.rule.metadata.internal.config.OperatorConfig;
+import org.wso2.carbon.identity.rule.metadata.internal.config.RuleMetadataConfigFactory;
+import org.wso2.carbon.identity.rule.metadata.internal.service.impl.RuleMetadataManager;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -175,6 +175,26 @@ public class RuleMetadataManagerTest {
         assertNotNull(result);
         assertEquals(result.size(), fieldDefinitionsForMetadataProvider1.size());
         assertEquals(result, fieldDefinitionsForMetadataProvider1);
+    }
+
+    @Test(dependsOnMethods = {"testRegisterMetadataProvider"})
+    public void testGetApplicableOperatorsInExpressions() {
+
+        List<Operator> applicableOperators = ruleMetadataManager.getApplicableOperatorsInExpressions();
+        assertNotNull(applicableOperators);
+        assertEquals(applicableOperators.size(), 3);
+
+        Operator equalsOperator = applicableOperators.get(0);
+        assertEquals(equalsOperator.getName(), "equals");
+        assertEquals(equalsOperator.getDisplayName(), "equals");
+
+        Operator notEqualsOperator = applicableOperators.get(1);
+        assertEquals(notEqualsOperator.getName(), "notEquals");
+        assertEquals(notEqualsOperator.getDisplayName(), "not equals");
+
+        Operator containsOperator = applicableOperators.get(2);
+        assertEquals(containsOperator.getName(), "contains");
+        assertEquals(containsOperator.getDisplayName(), "contains");
     }
 
     @Test(dependsOnMethods = {"testRegisterMetadataProvider",
