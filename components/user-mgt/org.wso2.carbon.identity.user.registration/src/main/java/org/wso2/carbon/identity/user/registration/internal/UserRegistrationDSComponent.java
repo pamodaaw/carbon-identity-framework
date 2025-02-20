@@ -30,8 +30,8 @@ import org.osgi.service.component.annotations.ReferenceCardinality;
 import org.osgi.service.component.annotations.ReferencePolicy;
 
 @Component(
-        name = "usermgt.registration.component",
-        immediate = true)
+         name = "usermgt.registration.component",
+         immediate = true)
 public class UserRegistrationDSComponent {
 
     private static final Log log = LogFactory.getLog(UserRegistrationDSComponent.class);
@@ -45,11 +45,11 @@ public class UserRegistrationDSComponent {
     }
 
     @Reference(
-            name = "registry.service",
-            service = org.wso2.carbon.registry.core.service.RegistryService.class,
-            cardinality = ReferenceCardinality.MANDATORY,
-            policy = ReferencePolicy.DYNAMIC,
-            unbind = "unsetRegistryService")
+             name = "registry.service",
+             service = org.wso2.carbon.registry.core.service.RegistryService.class,
+             cardinality = ReferenceCardinality.MANDATORY,
+             policy = ReferencePolicy.DYNAMIC,
+             unbind = "unsetRegistryService")
     protected void setRegistryService(RegistryService registryService) {
         if (log.isDebugEnabled()) {
             log.info("Setting the Registry Service");
@@ -62,11 +62,11 @@ public class UserRegistrationDSComponent {
     }
 
     @Reference(
-            name = "user.realmservice.default",
-            service = org.wso2.carbon.user.core.service.RealmService.class,
-            cardinality = ReferenceCardinality.MANDATORY,
-            policy = ReferencePolicy.DYNAMIC,
-            unbind = "unsetRealmService")
+             name = "user.realmservice.default",
+             service = org.wso2.carbon.user.core.service.RealmService.class,
+             cardinality = ReferenceCardinality.MANDATORY,
+             policy = ReferencePolicy.DYNAMIC,
+             unbind = "unsetRealmService")
     protected void setRealmService(RealmService realmService) {
         if (log.isDebugEnabled()) {
             log.info("Setting the Realm Service");
@@ -97,4 +97,5 @@ public class UserRegistrationDSComponent {
         }
         UserRegistrationDSComponent.realmService = null;
     }
+
 }

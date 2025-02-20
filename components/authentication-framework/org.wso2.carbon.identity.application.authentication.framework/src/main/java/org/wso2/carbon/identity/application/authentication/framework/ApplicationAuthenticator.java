@@ -181,15 +181,4 @@ public interface ApplicationAuthenticator extends Serializable {
 
         return DefinedByType.SYSTEM;
     }
-    /**
-     * Check whether the authenticator can handle auto login.
-     *
-     * @param request Authentication request.
-     * @param context Authentication context.
-     * @return True if the authenticator can handle auto login.
-     */
-    default boolean canHandleAutoLogin(HttpServletRequest request, AuthenticationContext context) {
-
-        return false;
-    }
 }

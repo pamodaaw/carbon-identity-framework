@@ -18,7 +18,6 @@
 
 package org.wso2.carbon.identity.application.authentication.framework;
 
-import com.nimbusds.jwt.JWTClaimsSet;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.ArrayUtils;
@@ -33,11 +32,9 @@ import org.wso2.carbon.identity.application.authentication.framework.config.mode
 import org.wso2.carbon.identity.application.authentication.framework.config.model.graph.AuthenticationGraph;
 import org.wso2.carbon.identity.application.authentication.framework.context.AuthenticationContext;
 import org.wso2.carbon.identity.application.authentication.framework.exception.AuthenticationFailedException;
-import org.wso2.carbon.identity.application.authentication.framework.exception.FrameworkException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.LogoutFailedException;
 import org.wso2.carbon.identity.application.authentication.framework.internal.FrameworkServiceDataHolder;
 import org.wso2.carbon.identity.application.authentication.framework.model.AuthenticatedUser;
-import org.wso2.carbon.identity.application.authentication.framework.util.AutoLoginAssertionUtils;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkConstants;
 import org.wso2.carbon.identity.application.authentication.framework.util.FrameworkUtils;
 import org.wso2.carbon.identity.application.common.model.Property;
@@ -62,7 +59,6 @@ import org.wso2.carbon.utils.DiagnosticLog;
 import org.wso2.carbon.utils.multitenancy.MultitenantUtils;
 
 import java.io.Serializable;
-import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -90,41 +86,6 @@ public abstract class AbstractApplicationAuthenticator implements ApplicationAut
     private static final Log log = LogFactory.getLog(AbstractApplicationAuthenticator.class);
     public static final String ENABLE_RETRY_FROM_AUTHENTICATOR = "enableRetryFromAuthenticator";
     public static final String SKIP_RETRY_FROM_AUTHENTICATOR = "skipRetryFromAuthenticator";
-
-    @Override
-    public boolean canHandleAutoLogin(HttpServletRequest request, AuthenticationContext context) {
-
-        if (request.getParameter("user_assertion") != null) {
-
-            try {
-                Optional<JWTClaimsSet> userAssertionClaims =
-                        AutoLoginAssertionUtils.retrieveClaimsFromAutoLoginUserAssertion(
-                                request.getParameter("user_assertion"), context.getTenantDomain());
-                if (userAssertionClaims.isPresent()) {
-                    String[] amr = userAssertionClaims.get().getStringArrayClaim("amr");
-                    String username = userAssertionClaims.get().getSubject();
-                    Boolean authenticatorEngaged = false;
-
-                    for (String authenticatorName : amr) {
-                        if (authenticatorName.equals(this.getName())) {
-                            authenticatorEngaged = true;
-                            break;
-                        }
-                    }
-                    if (authenticatorEngaged && username != null) {
-                        String userStoreDomain = UserCoreUtil.extractDomainFromName(username);
-                        UserCoreUtil.setDomainInThreadLocal(userStoreDomain);
-                        context.setSubject(
-                                AuthenticatedUser.createLocalAuthenticatedUserFromSubjectIdentifier(username));
-                        return true;
-                    }
-                }
-            } catch (FrameworkException | ParseException e) {
-                log.error("Error while retrieving claims from auto login user assertion.", e);
-            }
-        }
-        return false;
-    }
 
     @Override
     public AuthenticatorFlowStatus process(HttpServletRequest request,
