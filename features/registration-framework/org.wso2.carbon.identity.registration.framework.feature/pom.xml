@@ -38,6 +38,11 @@
             <artifactId>org.wso2.carbon.identity.user.registration.mgt.server.feature</artifactId>
             <type>zip</type>
         </dependency>
+        <dependency>
+            <groupId>org.wso2.carbon.identity.framework</groupId>
+            <artifactId>org.wso2.carbon.identity.user.registration.engine.server.feature</artifactId>
+            <type>zip</type>
+        </dependency>
     </dependencies>
 
     <build>
@@ -58,6 +63,8 @@
                             <propertiesFile>../../etc/feature.properties</propertiesFile>
                             <includedFeatures>
                                 <includedFeatureDef>org.wso2.carbon.identity.framework:org.wso2.carbon.identity.user.registration.mgt.server.feature
+                                </includedFeatureDef>
+                                <includedFeatureDef>org.wso2.carbon.identity.framework:org.wso2.carbon.identity.user.registration.engine.server.feature
                                 </includedFeatureDef>
                             </includedFeatures>
                         </configuration>
