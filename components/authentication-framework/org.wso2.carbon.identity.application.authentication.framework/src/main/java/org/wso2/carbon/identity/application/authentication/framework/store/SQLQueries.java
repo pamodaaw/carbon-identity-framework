@@ -63,6 +63,20 @@ public class SQLQueries {
     public static final String SQL_SELECT_SESSION_ID_OF_USER_ID =
             "SELECT SESSION_ID FROM IDN_AUTH_USER_SESSION_MAPPING WHERE USER_ID = ?";
 
+    public static final String SQL_SELECT_ACTIVE_SESSION_IDS_OF_USER_ID =
+            "SELECT IDN_AUTH_USER_SESSION_MAPPING.SESSION_ID FROM IDN_AUTH_USER_SESSION_MAPPING " +
+            "WHERE IDN_AUTH_USER_SESSION_MAPPING.USER_ID = ? " +
+            "AND EXISTS (" +
+                "SELECT 1 FROM IDN_AUTH_SESSION_STORE WHERE IDN_AUTH_SESSION_STORE.SESSION_ID = " +
+                "IDN_AUTH_USER_SESSION_MAPPING.SESSION_ID AND IDN_AUTH_SESSION_STORE.SESSION_TYPE = '" +
+                SESSION_CONTEXT_CACHE_NAME +
+            "') " +
+            "AND NOT EXISTS (" +
+                "SELECT 1 FROM IDN_AUTH_SESSION_STORE WHERE IDN_AUTH_SESSION_STORE.SESSION_ID = " +
+                "IDN_AUTH_USER_SESSION_MAPPING.SESSION_ID AND IDN_AUTH_SESSION_STORE.SESSION_TYPE = '" +
+                SESSION_CONTEXT_CACHE_NAME + "' AND IDN_AUTH_SESSION_STORE.OPERATION = '" + DELETE_OPERATION +
+            "')";
+
     public static final String SQL_SELECT_TERMINATED_SESSION_IDS =
             "SELECT SESSION_ID FROM IDN_AUTH_SESSION_STORE WHERE SESSION_TYPE = '" + SESSION_CONTEXT_CACHE_NAME
                     + "' AND EXPIRY_TIME < ?";
@@ -78,6 +92,11 @@ public class SQLQueries {
      */
     public static final String SQL_SELECT_IDP_ID_OF_IDP = "SELECT IDP.ID FROM IDP WHERE NAME = ?";
 
+    /**
+     * @deprecated The identity provider of a session user is resolved through the identity provider
+     * management service.
+     */
+    @Deprecated
     public static final String SQL_SELECT_IDP_WITH_TENANT = "SELECT IDP.ID FROM IDP WHERE NAME = ? AND TENANT_ID = ?";
 
     // Retrieve application id given the name and the tenant id.
@@ -174,9 +193,17 @@ public class SQLQueries {
     public static final String SQL_GET_APPS_FOR_SESSION_ID = "SELECT SUBJECT, APP_ID FROM IDN_AUTH_SESSION_APP_INFO " +
             "WHERE SESSION_ID = ?";
 
+    /**
+     * @deprecated The applications of a session are read through the application management service.
+     */
+    @Deprecated
     public static final String SQL_GET_APPLICATION = "SELECT ID, APP_NAME, UUID FROM SP_APP WHERE ID IN (" +
             SCOPE_LIST_PLACEHOLDER + ")";
 
+    /**
+     * @deprecated The applications matching a session search are read through the application management service.
+     */
+    @Deprecated
     public static final String SQL_GET_APPLICATIONS_BY_FILTER_AND_TENANT = "SELECT ID, APP_NAME, UUID FROM SP_APP {0}";
 
     public static final String SQL_GET_SESSIONS_BY_USER = "SELECT SESSION_ID FROM IDN_AUTH_USER_SESSION_MAPPING " +
