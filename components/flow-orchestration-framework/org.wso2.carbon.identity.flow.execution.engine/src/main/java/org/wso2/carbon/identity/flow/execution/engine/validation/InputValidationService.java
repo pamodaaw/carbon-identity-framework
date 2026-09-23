@@ -50,6 +50,7 @@ import org.wso2.carbon.user.api.UserStoreException;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -60,6 +61,7 @@ import java.util.stream.Collectors;
 
 import static org.wso2.carbon.identity.flow.execution.engine.Constants.CLAIM_URI_PREFIX;
 import static org.wso2.carbon.identity.flow.execution.engine.Constants.DEFAULT_ACTION;
+import static org.wso2.carbon.identity.flow.execution.engine.Constants.DOB_CLAIM_URI;
 import static org.wso2.carbon.identity.flow.execution.engine.Constants.ErrorMessages.ERROR_CODE_CLAIM_META_DATA_NOT_FOUND;
 import static org.wso2.carbon.identity.flow.execution.engine.Constants.ErrorMessages.ERROR_CODE_CLAIM_REGEX_VALIDATION_FAILED;
 import static org.wso2.carbon.identity.flow.execution.engine.Constants.ErrorMessages.ERROR_CODE_CLAIM_UNIQUENESS_VALIDATION_FAILED;
@@ -98,6 +100,13 @@ public class InputValidationService {
     private static final Log LOG = LogFactory.getLog(InputValidationService.class);
     private static final InputValidationService instance = new InputValidationService();
     public static final String CONFIRMATION_CODE = "confirmationCode";
+    private static final String DATE_VARIANT = "DATE";
+    private static final String DATE_VALIDATOR = "DateValidator";
+    private static final String DISALLOW_FUTURE_CONDITION = "disallow.future";
+    // Claims whose value can never be a future date. Kept as a fixed set rather than claim
+    // configuration so the rule applies uniformly to every tenant without provisioning changes.
+    // Not every date claim belongs here: expiry or renewal dates are legitimately in the future.
+    private static final Set<String> NO_FUTURE_DATE_CLAIMS = Collections.singleton(DOB_CLAIM_URI);
 
     private InputValidationService() {
 
@@ -678,6 +687,7 @@ public class InputValidationService {
             if (Constants.ComponentTypes.INPUT.equals(component.getType())) {
                 String identifier = (String) component.getConfigs().get(IDENTIFIER);
                 applyValidationIfNeeded(component, identifier, validationMap);
+                applyDateValidationIfNeeded(component, identifier);
             } else if (Constants.ComponentTypes.FORM.equals(component.getType())) {
                 // Process nested components.
                 processComponentValidations(component.getComponents(), validationMap);
@@ -691,6 +701,47 @@ public class InputValidationService {
         if (identifier != null && validationMap.containsKey(identifier)) {
             component.getConfigs().put(VALIDATIONS, validationMap.get(identifier));
         }
+    }
+
+    /**
+     * Attach a client-side date validation rule to a date input component backed by a claim whose
+     * value can never be a future date. The rule is consumed by the client to show an inline error
+     * before submission. Server-side enforcement is handled separately by the user store operation
+     * listeners, which apply the same rule regardless of what the client was told.
+     *
+     * @param component  Input component.
+     * @param identifier Component identifier (claim URI for claim-backed inputs).
+     */
+    private void applyDateValidationIfNeeded(ComponentDTO component, String identifier) {
+
+        if (!NO_FUTURE_DATE_CLAIMS.contains(identifier) ||
+                !DATE_VARIANT.equalsIgnoreCase(component.getVariant())) {
+            return;
+        }
+        ValidationDTO dateValidation = new ValidationDTO();
+        dateValidation.setName(DATE_VALIDATOR);
+        dateValidation.setType(RULES);
+        List<ValidationDTO.Condition> conditions = new ArrayList<>();
+        conditions.add(new ValidationDTO.Condition(DISALLOW_FUTURE_CONDITION, Boolean.TRUE.toString()));
+        dateValidation.setConditions(conditions);
+        addValidationToComponent(component, dateValidation);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Attached future-date validation for claim: " + identifier);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void addValidationToComponent(ComponentDTO component, ValidationDTO validationDTO) {
+
+        Object existing = component.getConfigs().get(VALIDATIONS);
+        List<ValidationDTO> validations;
+        if (existing instanceof List) {
+            validations = (List<ValidationDTO>) existing;
+        } else {
+            validations = new ArrayList<>();
+            component.getConfigs().put(VALIDATIONS, validations);
+        }
+        validations.add(validationDTO);
     }
 
     private ArrayList<ValidationDTO> getValidationDTOs(String tenantDomain, String key)

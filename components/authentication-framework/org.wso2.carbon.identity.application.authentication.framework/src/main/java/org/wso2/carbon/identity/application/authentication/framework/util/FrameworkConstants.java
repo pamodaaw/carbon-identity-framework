@@ -183,6 +183,8 @@ public abstract class FrameworkConstants {
             "IncludeAuthFailureReasonInAPIBasedAuthResponse";
     public static final String INCLUDE_MULTI_OPTIONS_IN_API_BASED_RESPONSE =
             "IncludeMultiOptionsInAPIBasedAuthResponse";
+    public static final String INCLUDE_AUTH_INIT_DATA_ON_RETRY_IN_API_BASED_AUTH_RESPONSE =
+            "IncludeAuthInitDataOnRetryInAPIBasedAuthResponse";
 
     public static final String REMEMBER_ME_OPT_ON = "on";
     public static final String LAST_FAILED_AUTHENTICATOR = "LastFailedAuthenticator";
@@ -293,6 +295,8 @@ public abstract class FrameworkConstants {
     public static final String REQ_ATTR_RETRY_STATUS = "retryStatus";
     public static final String IDP_MAPPED_USER_ROLES = "identityProviderMappedUserRoles";
     public static final String ALLOW_ASSOCIATING_TO_EXISTING_USER = "JITProvisioning.AllowAssociatingToExistingUser";
+    public static final String RESOLVE_EXISTING_USER_BEFORE_CONSENT_PROMPT =
+            "JITProvisioning.ResolveExistingUserBeforeConsentPrompt";
 
     // The constant to used as the attribute key or the property key of the federated tokens.
     public static final String FEDERATED_TOKENS = "federated_tokens";

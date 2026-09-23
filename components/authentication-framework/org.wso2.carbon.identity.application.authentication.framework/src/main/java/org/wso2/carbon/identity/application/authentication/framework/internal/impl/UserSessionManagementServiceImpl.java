@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018-2024, WSO2 LLC. (http://www.wso2.com).
+ * Copyright (c) 2018-2026, WSO2 LLC. (http://www.wso2.com).
  *
  * WSO2 LLC. licenses this file to you under the Apache License,
  * Version 2.0 (the "License"); you may not use this file except
@@ -26,7 +26,7 @@ import org.wso2.carbon.context.CarbonContext;
 import org.wso2.carbon.identity.application.authentication.framework.UserSessionManagementService;
 import org.wso2.carbon.identity.application.authentication.framework.context.SessionContext;
 import org.wso2.carbon.identity.application.authentication.framework.dao.UserSessionDAO;
-import org.wso2.carbon.identity.application.authentication.framework.dao.impl.UserSessionDAOImpl;
+import org.wso2.carbon.identity.application.authentication.framework.dao.UserSessionDAOFactory;
 import org.wso2.carbon.identity.application.authentication.framework.exception.UserSessionException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.session.mgt.SessionManagementClientException;
 import org.wso2.carbon.identity.application.authentication.framework.exception.session.mgt.SessionManagementException;
@@ -290,15 +290,15 @@ public class UserSessionManagementServiceImpl implements UserSessionManagementSe
             if (authSessionUserMap != null && !authSessionUserMap.isEmpty()) {
                 String fedAssociatedUserId = authSessionUserMap.get(SessionMgtConstants.AuthSessionUserKeys.USER_ID);
                 if (StringUtils.isNotEmpty(fedAssociatedUserId)) {
-                    userSessions = getActiveSessionList(getSessionIdListByUserId(fedAssociatedUserId),
+                    userSessions = getActiveSessionList(getActiveSessionIdListByUserId(fedAssociatedUserId),
                             authSessionUserMap.get(SessionMgtConstants.AuthSessionUserKeys.IDP_ID),
                             authSessionUserMap.get(SessionMgtConstants.AuthSessionUserKeys.IDP_NAME));
                     addAssociatedAssociatedLocalUserIdSessions(userSessions, userId);
                 } else {
-                    userSessions = getActiveSessionList(getSessionIdListByUserId(userId), null, null);
+                    userSessions = getActiveSessionList(getActiveSessionIdListByUserId(userId), null, null);
                 }
             } else {
-                userSessions = getActiveSessionList(getSessionIdListByUserId(userId), null, null);
+                userSessions = getActiveSessionList(getActiveSessionIdListByUserId(userId), null, null);
             }
         } catch (UserSessionException e) {
             String msg = "Error occurred while retrieving federated associations for the userId: " + userId;
@@ -388,7 +388,7 @@ public class UserSessionManagementServiceImpl implements UserSessionManagementSe
         SessionContext sessionContext = FrameworkUtils.getSessionContextFromCache(sessionId,
                 FrameworkUtils.getLoginTenantDomainFromContext());
         if (sessionContext != null) {
-            UserSessionDAO userSessionDAO = new UserSessionDAOImpl();
+            UserSessionDAO userSessionDAO = UserSessionDAOFactory.getUserSessionDAO();
             try {
                 String tenantDomain = CarbonContext.getThreadLocalCarbonContext().getTenantDomain();
                 int tenantId = getTenantId(tenantDomain);
@@ -494,7 +494,7 @@ public class UserSessionManagementServiceImpl implements UserSessionManagementSe
             if (log.isDebugEnabled()) {
                 log.debug("Searching active sessions on the system.");
             }
-            UserSessionDAO userSessionDAO = new UserSessionDAOImpl();
+            UserSessionDAO userSessionDAO = UserSessionDAOFactory.getUserSessionDAO();
 
             List<UserSession> sessionsList = userSessionDAO.getSessions(getTenantId(tenantDomain),
                     filter, limit, sortOrder);
@@ -584,7 +584,7 @@ public class UserSessionManagementServiceImpl implements UserSessionManagementSe
             throw handleSessionManagementClientException(
                     SessionMgtConstants.ErrorMessages.ERROR_CODE_INVALID_SESSION_ID, null);
         }
-        UserSessionDAO userSessionDTO = new UserSessionDAOImpl();
+        UserSessionDAO userSessionDTO = UserSessionDAOFactory.getUserSessionDAO();
         UserSession userSession = userSessionDTO.getSession(sessionId);
 
         return Optional.ofNullable(userSession);
@@ -604,6 +604,25 @@ public class UserSessionManagementServiceImpl implements UserSessionManagementSe
                 log.debug("Retrieving the list of sessions owned by the user: " + userId + ".");
             }
             return UserSessionStore.getInstance().getSessionId(userId);
+        } catch (UserSessionException e) {
+            throw handleSessionManagementServerException(ERROR_CODE_UNABLE_TO_GET_SESSIONS, userId, e);
+        }
+    }
+
+    /**
+     * Returns the active session ID list for a given user ID.
+     *
+     * @param userId User ID for which the active sessions should be retrieved.
+     * @return The list of active session IDs.
+     * @throws SessionManagementServerException If active session IDs cannot be retrieved from the database.
+     */
+    private List<String> getActiveSessionIdListByUserId(String userId) throws SessionManagementServerException {
+
+        try {
+            if (log.isDebugEnabled()) {
+                log.debug("Retrieving the list of active sessions owned by the user: " + userId + ".");
+            }
+            return UserSessionStore.getInstance().getActiveSessionIds(userId);
         } catch (UserSessionException e) {
             throw handleSessionManagementServerException(ERROR_CODE_UNABLE_TO_GET_SESSIONS, userId, e);
         }
@@ -647,7 +666,7 @@ public class UserSessionManagementServiceImpl implements UserSessionManagementSe
                 SessionContext sessionContext = FrameworkUtils.getSessionContextFromCache(sessionId,
                         FrameworkUtils.getLoginTenantDomainFromContext());
                 if (sessionContext != null) {
-                    UserSessionDAO userSessionDAO = new UserSessionDAOImpl();
+                    UserSessionDAO userSessionDAO = UserSessionDAOFactory.getUserSessionDAO();
                     UserSession userSession = userSessionDAO.getSession(sessionId);
                     if (userSession != null) {
                         if (!isEffectiveSession(sessionContext, userSession)) {
@@ -979,12 +998,13 @@ public class UserSessionManagementServiceImpl implements UserSessionManagementSe
          entries with unique session IDs. If set to false, it will return duplicate entries with corresponding idpId and
          idpName for associated federated user. */
         if (!Boolean.parseBoolean(IdentityUtil.getProperty(FrameworkConstants.FILER_BY_SESSION_ID_FOR_USER))) {
-            userSessions.addAll(getActiveSessionList(getSessionIdListByUserId(associatedLocalUserId), null, null));
+            userSessions.addAll(
+                    getActiveSessionList(getActiveSessionIdListByUserId(associatedLocalUserId), null, null));
             return;
         }
 
         List<UserSession> associatedLocalUserIdSessions =
-                getActiveSessionList(getSessionIdListByUserId(associatedLocalUserId), null, null);
+                getActiveSessionList(getActiveSessionIdListByUserId(associatedLocalUserId), null, null);
         for (UserSession associatedLocalUserIdSession : associatedLocalUserIdSessions) {
             if (userSessions.stream().noneMatch(userSession ->
                     StringUtils.equals(userSession.getSessionId(), associatedLocalUserIdSession.getSessionId()))) {
